@@ -26,6 +26,7 @@
     document.getElementById('scoreDisplay').textContent = TD.state.score.toLocaleString();
     document.getElementById('distDisplay').textContent =
       Math.floor(TD.state.distance * 100) + 'm  🪙 ' + TD.totalCoins;
+    document.getElementById('versionDisplay').textContent = TD.VERSION;
   };
 
   // Start button
