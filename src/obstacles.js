@@ -83,43 +83,77 @@
 
   // ---- Hole ----
   function drawHole(ctx, obs) {
-    const t     = obs.t;
-    const y     = VP_Y + (GROUND_BOTTOM - VP_Y) * t;
-    const hw    = pathHalfW(t);
-    const tFar  = Math.max(0.01, t * (1 - obs.holeDepth));
-    const yFar  = VP_Y + (GROUND_BOTTOM - VP_Y) * tFar;
-    const hwFar = pathHalfW(tFar);
-    const n     = obs.jagsNear.length - 1;
-    const now   = Date.now() * 0.001;
+    const t      = obs.t;
+    const y      = VP_Y + (GROUND_BOTTOM - VP_Y) * t;
+    const hw     = pathHalfW(t);
+    const wallW  = 3 + 20 * t;
+    const wallH  = 6 + 105 * t;
+    const totalHw = hw + wallW;                         // full width incl. walls
 
-    // Build the hole outline as a reusable path
+    const tFar      = Math.max(0.01, t * (1 - obs.holeDepth));
+    const yFar      = VP_Y + (GROUND_BOTTOM - VP_Y) * tFar;
+    const hwFar     = pathHalfW(tFar);
+    const wallWFar  = 3 + 20 * tFar;
+    const wallHFar  = 6 + 105 * tFar;
+    const totalHwFar = hwFar + wallWFar;
+
+    const n   = obs.jagsNear.length - 1;
+    const now = Date.now() * 0.001;
+
+    // Full-width hole outline (path + wall footprint on the ground plane)
     function traceHole() {
       for (let i = 0; i <= n; i++) {
-        const x  = VP_X - hw + (i / n) * hw * 2 + obs.jagsNear[i] * hw * 0.5;
+        const x  = VP_X - totalHw + (i / n) * totalHw * 2 + obs.jagsNear[i] * totalHw * 0.5;
         const yj = y + obs.jagsNear[i] * 6 * t;
         i === 0 ? ctx.moveTo(x, yj) : ctx.lineTo(x, yj);
       }
       for (let i = n; i >= 0; i--) {
-        const x  = VP_X - hwFar + (i / n) * hwFar * 2 + obs.jagsFar[i] * hwFar * 0.35;
+        const x  = VP_X - totalHwFar + (i / n) * totalHwFar * 2 + obs.jagsFar[i] * totalHwFar * 0.35;
         const yj = yFar + obs.jagsFar[i] * 4 * tFar;
         ctx.lineTo(x, yj);
       }
       ctx.closePath();
     }
 
-    // ---- 1. Sea visible through the hole (clipped) ----
+    // ---- 1. Wall gap — cover the wall segments above ground ----
+    // Drawn first so stone cross-sections overlay on top.
+    for (const side of [-1, 1]) {
+      const xiNear = VP_X + side * hw;
+      const xoNear = VP_X + side * totalHw;
+      const xiFar  = VP_X + side * hwFar;
+      const xoFar  = VP_X + side * totalHwFar;
+      const ytNear = y    - wallH;
+      const ytFar  = yFar - wallHFar;
+
+      // Top face of the gap (looking down into the destroyed wall section)
+      ctx.fillStyle = '#060f1c';
+      ctx.beginPath();
+      ctx.moveTo(xiNear, ytNear); ctx.lineTo(xoNear, ytNear);
+      ctx.lineTo(xoFar,  ytFar);  ctx.lineTo(xiFar,  ytFar);
+      ctx.closePath(); ctx.fill();
+
+      // Inner face (path-side face of the missing wall section — recedes into distance)
+      const gInner = ctx.createLinearGradient(0, ytNear, 0, y);
+      gInner.addColorStop(0, '#040c18');
+      gInner.addColorStop(1, '#0c2238');
+      ctx.fillStyle = gInner;
+      ctx.beginPath();
+      ctx.moveTo(xiNear, y);    ctx.lineTo(xiNear, ytNear);
+      ctx.lineTo(xiFar,  ytFar); ctx.lineTo(xiFar,  yFar);
+      ctx.closePath(); ctx.fill();
+    }
+
+    // ---- 2. Sea visible through the ground hole (clipped to full-width outline) ----
     ctx.save();
     ctx.beginPath(); traceHole(); ctx.clip();
 
-    // Sea base gradient
     const seaG = ctx.createLinearGradient(0, yFar, 0, y);
-    seaG.addColorStop(0, '#081828');
+    seaG.addColorStop(0,   '#081828');
     seaG.addColorStop(0.5, '#0c2238');
-    seaG.addColorStop(1, '#102a44');
+    seaG.addColorStop(1,   '#102a44');
     ctx.fillStyle = seaG;
-    ctx.fillRect(VP_X - hw, yFar, hw * 2, y - yFar + 10);
+    ctx.fillRect(VP_X - totalHw, yFar, totalHw * 2, y - yFar + 10);
 
-    // Animated waves inside hole
     ctx.lineCap = 'round';
     for (let w = 0; w < 4; w++) {
       const wy    = yFar + (y - yFar) * (0.2 + w * 0.22);
@@ -128,82 +162,114 @@
       ctx.strokeStyle = `rgba(30,95,165,${0.35 + w * 0.08})`;
       ctx.lineWidth = Math.max(0.7, 1.4 * t);
       ctx.beginPath();
-      for (let x = VP_X - hw; x <= VP_X + hw; x += 5) {
+      for (let x = VP_X - totalHw; x <= VP_X + totalHw; x += 5) {
         const wv = wy + Math.sin(x * 0.055 + phase) * amp;
-        x === VP_X - hw ? ctx.moveTo(x, wv) : ctx.lineTo(x, wv);
+        x === VP_X - totalHw ? ctx.moveTo(x, wv) : ctx.lineTo(x, wv);
       }
       ctx.stroke();
     }
 
-    // Light sparkle on water surface
     if (t > 0.22) {
       const sparkAlpha = 0.18 + 0.12 * Math.sin(now * 3.5);
-      const sg = ctx.createRadialGradient(VP_X, yFar + (y - yFar) * 0.38, 0, VP_X, yFar + (y - yFar) * 0.38, hw * 0.55);
-      sg.addColorStop(0, `rgba(130,210,250,${sparkAlpha})`);
-      sg.addColorStop(1, 'rgba(130,210,250,0)');
-      ctx.fillStyle = sg;
-      ctx.fillRect(VP_X - hw, yFar, hw * 2, y - yFar);
+      const sparkG = ctx.createRadialGradient(
+        VP_X, yFar + (y - yFar) * 0.38, 0,
+        VP_X, yFar + (y - yFar) * 0.38, totalHw * 0.55
+      );
+      sparkG.addColorStop(0, `rgba(130,210,250,${sparkAlpha})`);
+      sparkG.addColorStop(1, 'rgba(130,210,250,0)');
+      ctx.fillStyle = sparkG;
+      ctx.fillRect(VP_X - totalHw, yFar, totalHw * 2, y - yFar);
     }
-
     ctx.restore();
 
-    // ---- 2. Stone path cross-section (thickness visible at near edge) ----
+    // ---- 3. Stone path cross-section (near edge, full width) ----
     const thickness = Math.max(2, 7 * t);
-    const sr = Math.floor(88 + t * 32), sg2 = Math.floor(70 + t * 25), sb = Math.floor(36 + t * 14);
-    ctx.fillStyle = `rgb(${sr},${sg2},${sb})`;
+    const sr  = Math.floor(88 + t * 32);
+    const sgr = Math.floor(70 + t * 25);
+    const sbv = Math.floor(36 + t * 14);
+    ctx.fillStyle = `rgb(${sr},${sgr},${sbv})`;
     ctx.beginPath();
     for (let i = 0; i <= n; i++) {
-      const x  = VP_X - hw + (i / n) * hw * 2 + obs.jagsNear[i] * hw * 0.5;
+      const x  = VP_X - totalHw + (i / n) * totalHw * 2 + obs.jagsNear[i] * totalHw * 0.5;
       const yj = y + obs.jagsNear[i] * 6 * t;
       i === 0 ? ctx.moveTo(x, yj) : ctx.lineTo(x, yj);
     }
     for (let i = n; i >= 0; i--) {
-      const x  = VP_X - hw + (i / n) * hw * 2 + obs.jagsNear[i] * hw * 0.5;
+      const x  = VP_X - totalHw + (i / n) * totalHw * 2 + obs.jagsNear[i] * totalHw * 0.5;
       const yj = y + obs.jagsNear[i] * 6 * t + thickness;
       ctx.lineTo(x, yj);
     }
     ctx.closePath();
     ctx.fill();
 
-    // ---- 3. Near broken edge highlight ----
+    // ---- 4. Wall cross-sections (broken wall face at near edge, both sides) ----
+    const wr  = Math.floor(108 + t * 72);
+    const wgr = Math.floor(84  + t * 58);
+    const wbv = Math.floor(40  + t * 32);
+    for (const side of [-1, 1]) {
+      const rectX  = VP_X + side * hw + (side > 0 ? 0 : -wallW);
+      const jagIdx = side > 0 ? n : 0;
+      const jagY   = y + obs.jagsNear[jagIdx] * 6 * t;
+
+      // Stone face
+      ctx.fillStyle = `rgb(${wr},${wgr},${wbv})`;
+      ctx.fillRect(rectX, jagY - wallH, wallW, wallH + thickness);
+
+      // Top highlight
+      ctx.fillStyle = `rgb(${Math.floor(175 + t * 25)},${Math.floor(145 + t * 20)},${Math.floor(72 + t * 18)})`;
+      ctx.fillRect(rectX, jagY - wallH, wallW, Math.max(2, 4 * t));
+
+      // Mortar lines on cross-section
+      if (t > 0.2) {
+        ctx.strokeStyle = `rgba(55,40,15,${0.2 + t * 0.25})`;
+        ctx.lineWidth = Math.max(0.5, 1.2 * t);
+        const blockH = Math.max(5, 14 + t * 8);
+        for (let bh = blockH; bh < wallH - 2; bh += blockH) {
+          const by = jagY - wallH + bh;
+          ctx.beginPath();
+          ctx.moveTo(rectX, by); ctx.lineTo(rectX + wallW, by); ctx.stroke();
+        }
+      }
+    }
+
+    // ---- 5. Near broken edge highlight (full width) ----
     ctx.strokeStyle = `rgba(215,182,88,${0.65 + t * 0.28})`;
     ctx.lineWidth = Math.max(2, 4.5 * t);
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.beginPath();
     for (let i = 0; i <= n; i++) {
-      const x  = VP_X - hw + (i / n) * hw * 2 + obs.jagsNear[i] * hw * 0.5;
+      const x  = VP_X - totalHw + (i / n) * totalHw * 2 + obs.jagsNear[i] * totalHw * 0.5;
       const yj = y + obs.jagsNear[i] * 6 * t;
       i === 0 ? ctx.moveTo(x, yj) : ctx.lineTo(x, yj);
     }
     ctx.stroke();
 
-    // ---- 4. Far edge line ----
+    // ---- 6. Far edge line (full width) ----
     ctx.strokeStyle = `rgba(145,115,55,${0.32 + t * 0.22})`;
     ctx.lineWidth = Math.max(1, 2 * t);
     ctx.beginPath();
     for (let i = 0; i <= n; i++) {
-      const x  = VP_X - hwFar + (i / n) * hwFar * 2 + obs.jagsFar[i] * hwFar * 0.35;
+      const x  = VP_X - totalHwFar + (i / n) * totalHwFar * 2 + obs.jagsFar[i] * totalHwFar * 0.35;
       const yj = yFar + obs.jagsFar[i] * 4 * tFar;
       i === 0 ? ctx.moveTo(x, yj) : ctx.lineTo(x, yj);
     }
     ctx.stroke();
 
-    // ---- 5. Stone debris chunks ----
+    // ---- 7. Stone debris (spread across full width) ----
     if (t > 0.15) {
-      const numChunks = 8;
+      const numChunks = 10;
       for (let i = 0; i < numChunks; i++) {
-        const cx2   = VP_X - hw * 0.85 + i * (hw * 1.7 / (numChunks - 1));
-        const cy2   = y + obs.jagsNear[Math.min(i, n)] * 6 * t;
+        const cx2   = VP_X - totalHw * 0.9 + i * (totalHw * 1.8 / (numChunks - 1));
+        const cy2   = y + obs.jagsNear[Math.min(Math.floor(i * n / numChunks), n)] * 6 * t;
         const size  = (2.5 + t * 9) * (0.35 + Math.abs(Math.sin(i * 1.8 + 0.4)) * 0.85);
         const angle = obs.jagsNear[i % (n + 1)] * 1.3;
-        const cr2   = Math.floor(158 + t * 38), cg3 = Math.floor(126 + t * 26), cb2 = Math.floor(60 + t * 14);
+        const cr2 = Math.floor(158 + t * 38), cg3 = Math.floor(126 + t * 26), cb2 = Math.floor(60 + t * 14);
         ctx.fillStyle = `rgb(${cr2},${cg3},${cb2})`;
         ctx.save();
         ctx.translate(cx2, cy2 - size * 0.12);
         ctx.rotate(angle);
         ctx.fillRect(-size * 0.55, -size * 0.45, size, size * 0.7);
         ctx.restore();
-        // Chunk shadow
         ctx.fillStyle = `rgba(0,0,0,${0.18 + t * 0.1})`;
         ctx.save();
         ctx.translate(cx2 + t, cy2 + size * 0.28);
@@ -213,14 +279,14 @@
       }
     }
 
-    // ---- 6. Foam/spray where sea meets stone ----
+    // ---- 8. Foam/spray ----
     if (t > 0.28) {
       const foamAlpha = 0.14 + 0.1 * Math.sin(now * 4.5);
       ctx.strokeStyle = `rgba(185,228,250,${foamAlpha})`;
       ctx.lineWidth = Math.max(1, 1.8 * t);
       ctx.beginPath();
       for (let i = 0; i <= n; i++) {
-        const x  = VP_X - hw + (i / n) * hw * 2 + obs.jagsNear[i] * hw * 0.5;
+        const x  = VP_X - totalHw + (i / n) * totalHw * 2 + obs.jagsNear[i] * totalHw * 0.5;
         const yj = y + obs.jagsNear[i] * 6 * t + 2;
         i === 0 ? ctx.moveTo(x, yj) : ctx.lineTo(x, yj);
       }
