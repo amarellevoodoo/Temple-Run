@@ -49,6 +49,7 @@
 
   TD.drawObstacle = function(ctx, obs) {
     if (obs.t < 0 || obs.t > 1.15) return;
+    const pal = TD.activePalette();
     const sC = laneToScreen(0, obs.t);
     const scale = obs.t;
     const y = sC.y;
@@ -71,14 +72,16 @@
 
       // Front face
       const g = ctx.createLinearGradient(segLeft, y - bh, segRight, y);
-      g.addColorStop(0, '#5a6a4a');   g.addColorStop(0.35, '#6a7a5a');
-      g.addColorStop(0.65, '#5a6a4a'); g.addColorStop(1, '#4a5a3a');
+      g.addColorStop(0,    pal.obstacleFront[0]);
+      g.addColorStop(0.35, pal.obstacleFront[1]);
+      g.addColorStop(0.65, pal.obstacleFront[2]);
+      g.addColorStop(1,    pal.obstacleFront[3]);
       ctx.fillStyle = g;
       ctx.fillRect(segLeft, y - bh, segW, bh);
 
       // Top surface
       const topD = Math.max(1.5, 4 * scale);
-      ctx.fillStyle = '#7a8a6a';
+      ctx.fillStyle = pal.obstacleTop;
       ctx.beginPath();
       ctx.moveTo(segLeft, y - bh);
       ctx.lineTo(segLeft + 2 * scale, y - bh - topD);
@@ -109,9 +112,9 @@
         }
       }
 
-      // Moss
+      // Moss / biome overgrowth
       if (scale > 0.18) {
-        ctx.fillStyle = 'rgba(40,95,25,0.3)';
+        ctx.fillStyle = pal.obstacleMoss;
         ctx.fillRect(segLeft + segW * 0.08, y - bh * 0.65, segW * 0.18, bh * 0.3);
         if (segW > 20) ctx.fillRect(segLeft + segW * 0.6, y - bh * 0.4, segW * 0.15, bh * 0.25);
       }
@@ -126,7 +129,7 @@
       }
 
       // Edge pillars
-      ctx.fillStyle = 'rgba(40,50,30,0.4)';
+      ctx.fillStyle = pal.obstacleEdge;
       const edgeW = Math.max(1, 2 * scale);
       ctx.fillRect(segLeft, y - bh, edgeW, bh);
       ctx.fillRect(segRight - edgeW, y - bh, edgeW, bh);
