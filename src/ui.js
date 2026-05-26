@@ -32,9 +32,11 @@
   // Start button
   document.getElementById('startBtn').addEventListener('click', () => {
     document.getElementById('overlay').classList.add('hidden');
-    document.getElementById('hud').style.display = 'flex';
     TD.init();
-    TD.state.running = true;
+    TD.playIntro(() => {
+      document.getElementById('hud').style.display = 'flex';
+      TD.state.running = true;
+    });
   });
 
   // Show version on overlay
