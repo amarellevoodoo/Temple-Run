@@ -4,7 +4,7 @@
 
 (function() {
   const { W, H, BASE_SPEED, MAX_SPEED, SPEED_INCREMENT, SPEED_RAMP_START_METERS,
-          INVINCIBLE_FRAMES, PLAYER_T, laneToScreen } = TD;
+          INVINCIBLE_FRAMES, PLAYER_T, laneToScreen, pathHalfW } = TD;
 
   const canvas = TD.canvas;
   const ctx = canvas.getContext('2d');
@@ -41,6 +41,9 @@
     TD.obstaclesReset();
     TD.coinsReset();
     TD.particlesReset();
+    if (TD.pathDecorReset) TD.pathDecorReset();
+    if (TD.ambientReset) TD.ambientReset();
+    if (TD.syncVisualBiome) TD.syncVisualBiome();
   };
 
   // ---- Invincibility power-up ----
@@ -118,6 +121,7 @@
     const newBiomeIdx = TD.getActiveBiomeIndex(meters);
     if (newBiomeIdx !== s.activeBiomeIndex) {
       s.activeBiomeIndex = newBiomeIdx;
+      if (TD.syncVisualBiome) TD.syncVisualBiome();
       if (TD.showBiomeBanner) TD.showBiomeBanner(TD.biomes[newBiomeIdx].name);
     }
 
@@ -133,6 +137,7 @@
     }
 
     TD.particlesUpdate();
+    if (TD.ambientUpdate) TD.ambientUpdate();
     if (s.screenShake > 0) s.screenShake--;
   }
 
@@ -161,12 +166,43 @@
     drawList.sort((a, b) => a.t - b.t);
 
     for (const item of drawList) {
+      if (item.type === 'player') {
+        const p = TD.player;
+        const sp = laneToScreen(p.lane, PLAYER_T);
+        TD.drawGroundShadow(ctx, sp.x, sp.y, PLAYER_T, {
+          alpha: Math.max(0.06, 0.35 - p.jumpT * 2.5),
+          rx: Math.max(5, 16 - p.jumpT * 25),
+          ry: Math.max(2, (16 - p.jumpT * 25) * 0.3),
+        });
+      } else if (item.type === 'coin') {
+        const c = item.obj;
+        const s = laneToScreen(c.lane, c.t);
+        TD.drawGroundShadow(ctx, s.x, s.y, c.t, {
+          rx: (5 + 9 * c.t) * 0.65,
+          ry: (2 + 4 * c.t) * 0.32,
+          alpha: 0.08 + c.t * 0.14,
+        });
+      } else if (item.type === 'obs') {
+        const o = item.obj;
+        if (o.t > 0.4 && !o.smashed) {
+          const ps = laneToScreen(0, o.t);
+          const hw = pathHalfW(o.t);
+          const wallW = 3 + 20 * o.t;
+          TD.drawGroundShadow(ctx, VP_X, ps.y, o.t, {
+            rx: (hw + wallW) * 0.5,
+            ry: 3 + 6 * o.t,
+            alpha: 0.1 + o.t * 0.16,
+          });
+        }
+      }
+
       if      (item.type === 'obs')    TD.drawObstacle(ctx, item.obj);
       else if (item.type === 'coin')   TD.drawCoin(ctx, item.obj);
       else                             TD.drawRunner(ctx);
     }
 
     TD.drawParticles(ctx);
+    if (TD.drawAmbient) TD.drawAmbient(ctx);
     TD.drawVignette(ctx);
 
     // Death flash
