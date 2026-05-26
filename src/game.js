@@ -11,6 +11,7 @@
   // Shared game state
   TD.state = {
     running: false,
+    paused: false,
     gameOver: false,
     score: 0,
     highScore: parseInt(localStorage.getItem('tdH2') || '0'),
@@ -28,12 +29,21 @@
     s.speed = BASE_SPEED;
     s.screenShake = 0;
     s.gameOver = false;
+    s.paused = false;
     s.activeBiomeIndex = 0;
 
     TD.playerReset();
     TD.obstaclesReset();
     TD.coinsReset();
     TD.particlesReset();
+  };
+
+  // ---- Pause ----
+  TD.togglePause = function() {
+    const s = TD.state;
+    if (!s.running || s.gameOver) return;
+    s.paused = !s.paused;
+    if (TD.renderPauseUI) TD.renderPauseUI();
   };
 
   // ---- Die ----
@@ -70,6 +80,9 @@
       if (s.screenShake > 0) s.screenShake--;
       return;
     }
+
+    // While paused, freeze world state — no speed ramp, no spawns, no movement.
+    if (s.paused) return;
 
     // Speed ramp
     s.speed = Math.min(MAX_SPEED, s.speed + SPEED_INCREMENT);

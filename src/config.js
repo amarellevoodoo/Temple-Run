@@ -23,8 +23,14 @@ const JUMP_VEL = 0.026;
 const GRAV = 0.0012;
 const JUMP_CLEAR_THRESHOLD = 0.05;
 
+// Slide
+const SLIDE_DURATION = 40;          // total frames a slide lasts
+const SLIDE_ACTIVE_START = 3;       // frame at which the slide "hitbox" becomes low
+const SLIDE_ACTIVE_END = 36;        // frame at which the slide "hitbox" stops being low
+
 // Obstacles
 const OBS_INTERVAL = 145;
+const OVERHEAD_CHANCE = 0.3;        // chance an obstacle is an overhead beam (slide-under)
 
 // Coins
 const COIN_INTERVAL_MIN = 35;
@@ -46,6 +52,7 @@ Object.assign(TD, {
   VERSION,
   W, H, VP_X, VP_Y, GROUND_BOTTOM, PLAYER_T, LANE_W, LANES,
   BASE_SPEED, MAX_SPEED, SPEED_INCREMENT, JUMP_VEL, GRAV, JUMP_CLEAR_THRESHOLD,
-  OBS_INTERVAL, COIN_INTERVAL_MIN, COIN_INTERVAL_RANGE,
+  SLIDE_DURATION, SLIDE_ACTIVE_START, SLIDE_ACTIVE_END,
+  OBS_INTERVAL, OVERHEAD_CHANCE, COIN_INTERVAL_MIN, COIN_INTERVAL_RANGE,
   laneToScreen, pathHalfW
 });

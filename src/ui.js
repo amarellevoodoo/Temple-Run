@@ -16,11 +16,15 @@
   const $worldBest      = document.getElementById('worldBest');
   const $startBtn       = document.getElementById('startBtn');
   const $leaderboardList= document.getElementById('leaderboardList');
+  const $pauseBtn       = document.getElementById('pauseBtn');
+  const $pauseOverlay   = document.getElementById('pauseOverlay');
+  const $resumeBtn      = document.getElementById('resumeBtn');
 
   // ---- Overlay ----
   TD.showOverlay = function(showScore) {
     $overlay.classList.remove('hidden');
     $hud.style.display = 'none';
+    if ($pauseOverlay) $pauseOverlay.classList.remove('show');
 
     if (showScore) {
       $finalScore.style.display = 'block';
@@ -102,6 +106,26 @@
       .catch(() => renderEmpty('Could not load leaderboard.'));
   }
 
+  // ---- Pause UI ----
+  TD.renderPauseUI = function() {
+    if (!$pauseOverlay || !$pauseBtn) return;
+    const paused = TD.state.paused;
+    $pauseOverlay.classList.toggle('show', paused);
+    $pauseBtn.classList.toggle('is-paused', paused);
+    $pauseBtn.setAttribute('aria-label', paused ? 'Resume' : 'Pause');
+  };
+
+  if ($pauseBtn) {
+    $pauseBtn.addEventListener('click', () => {
+      if (TD.togglePause) TD.togglePause();
+    });
+  }
+  if ($resumeBtn) {
+    $resumeBtn.addEventListener('click', () => {
+      if (TD.state.paused && TD.togglePause) TD.togglePause();
+    });
+  }
+
   // ---- Start button ----
   $startBtn.addEventListener('click', () => {
     // Prompt for name once on first ever run (cached afterwards).
@@ -112,6 +136,7 @@
     $hud.style.display = 'flex';
     TD.init();
     TD.state.running = true;
+    if (TD.renderPauseUI) TD.renderPauseUI();
     // Welcome banner for the starting biome.
     if (TD.biomes && TD.showBiomeBanner) {
       TD.showBiomeBanner(TD.biomes[0].name);

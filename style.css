@@ -152,6 +152,131 @@ canvas {
 .hud-right {
   display: flex;
   align-items: center;
+  gap: 10px;
+}
+
+/* Pause button — opt back in to clicks since the HUD disables them. */
+.pause-btn {
+  pointer-events: auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(200,168,78,0.5);
+  background: rgba(10,20,10,0.65);
+  color: #e0d8b0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.pause-btn:hover {
+  transform: scale(1.06);
+  background: rgba(20,35,20,0.85);
+  box-shadow: 0 0 14px rgba(200,168,78,0.35);
+}
+
+.pause-btn:active {
+  transform: scale(0.96);
+}
+
+.pause-btn .pause-icon {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+}
+
+.pause-btn .pause-icon .bar {
+  width: 4px;
+  height: 14px;
+  background: #e0d8b0;
+  border-radius: 1px;
+}
+
+.pause-btn .play-icon {
+  display: none;
+  width: 0;
+  height: 0;
+  border-left: 12px solid #e0d8b0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  margin-left: 3px;
+}
+
+.pause-btn.is-paused .pause-icon { display: none; }
+.pause-btn.is-paused .play-icon  { display: block; }
+
+/* Pause overlay */
+.pause-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5,15,5,0.7);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9;
+  transition: opacity 0.18s ease;
+}
+
+.pause-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pause-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 45px;
+  background: rgba(10,20,10,0.85);
+  border: 1px solid rgba(200,168,78,0.45);
+  border-radius: 14px;
+  box-shadow: 0 0 40px rgba(0,80,30,0.35);
+}
+
+.pause-card h2 {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 38px;
+  color: #c8a84e;
+  letter-spacing: 6px;
+  text-shadow: 0 0 18px rgba(200,168,78,0.45), 0 3px 6px rgba(0,0,0,0.7);
+  margin-bottom: 10px;
+}
+
+.pause-hint {
+  font-size: 12px;
+  color: #8a9a6a;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 22px;
+}
+
+#resumeBtn {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 16px;
+  padding: 10px 36px;
+  background: linear-gradient(135deg, #5a8a3a, #3a6a2a);
+  color: #e0d8b0;
+  border: 2px solid #8ab060;
+  border-radius: 50px;
+  cursor: pointer;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  box-shadow: 0 0 20px rgba(80,140,50,0.3);
+  transition: all 0.2s;
+  letter-spacing: 2px;
+}
+
+#resumeBtn:hover {
+  transform: scale(1.05);
+  background: linear-gradient(135deg, #6a9a4a, #4a7a3a);
+  box-shadow: 0 0 30px rgba(80,140,50,0.5);
 }
 
 .biome-chip {
