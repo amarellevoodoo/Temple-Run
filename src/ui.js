@@ -37,6 +37,9 @@
     TD.state.running = true;
   });
 
+  // Show version on overlay
+  document.getElementById('overlayVersion').textContent = TD.VERSION;
+
   // Show high score on load
   const hs = parseInt(localStorage.getItem('tdH2') || '0');
   if (hs > 0) {
