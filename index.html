@@ -12,27 +12,54 @@
   <canvas id="game" width="800" height="600"></canvas>
 
   <div id="hud" style="display:none;">
-    <div>
-      <div class="score" id="scoreDisplay">0</div>
-      <div class="dist" id="distDisplay">0m</div>
+    <div class="hud-left">
+      <div class="hud-stat">
+        <div class="hud-label">SCORE</div>
+        <div class="hud-value score" id="scoreDisplay">0</div>
+      </div>
+      <div class="hud-stat">
+        <div class="hud-label">METERS</div>
+        <div class="hud-value dist" id="distDisplay">0</div>
+      </div>
+      <div class="hud-stat">
+        <div class="hud-label">COINS</div>
+        <div class="hud-value coins" id="coinDisplay">0</div>
+      </div>
+    </div>
+    <div class="hud-right">
+      <div class="biome-chip" id="biomeChip">Jungle Temple</div>
     </div>
   </div>
+
+  <div id="biomeBanner" class="biome-banner"></div>
 
   <div id="overlay">
     <h1>TEMPLE DASH</h1>
     <div class="subtitle">Run. Jump. Survive.</div>
     <div class="score-display" id="finalScore" style="display:none;"></div>
     <div class="high-score" id="highScore" style="display:none;"></div>
+
+    <div class="world-best" id="worldBest"></div>
+
     <button id="startBtn">RUN</button>
+
+    <div class="leaderboard" id="leaderboardWrap">
+      <div class="leaderboard-title">GLOBAL LEADERBOARD</div>
+      <ol class="leaderboard-list" id="leaderboardList">
+        <li class="leaderboard-empty">Loading top runners...</li>
+      </ol>
+    </div>
+
     <div class="controls-hint">
-      ← → or A D — Switch Lanes<br>
-      ↑ or W or SPACE — Jump
+      &larr; &rarr; or A D &mdash; Switch Lanes<br>
+      &uarr; or W or SPACE &mdash; Jump
     </div>
   </div>
 </div>
 
-<!-- Load order matters: config first, then modules, game.js last -->
+<!-- Load order matters: config first, biomes next (so drawers can read palettes), then modules, game.js last -->
 <script src="src/config.js"></script>
+<script src="src/biomes.js"></script>
 <script>
   // Make canvas available to all modules
   TD.canvas = document.getElementById('game');
@@ -43,6 +70,7 @@
 <script src="src/coins.js"></script>
 <script src="src/environment.js"></script>
 <script src="src/input.js"></script>
+<script src="src/leaderboard.js"></script>
 <script src="src/ui.js"></script>
 <script src="src/game.js"></script>
 
