@@ -17,6 +17,7 @@
     speed: 0,
     distance: 0,
     screenShake: 0,
+    activeBiomeIndex: 0,
   };
 
   // ---- Init ----
@@ -27,6 +28,7 @@
     s.speed = BASE_SPEED;
     s.screenShake = 0;
     s.gameOver = false;
+    s.activeBiomeIndex = 0;
 
     TD.playerReset();
     TD.obstaclesReset();
@@ -50,6 +52,12 @@
       localStorage.setItem('tdH2', s.highScore.toString());
     }
 
+    // Submit to global leaderboard (fire-and-forget; gracefully no-ops if not configured)
+    if (TD.leaderboard && typeof TD.leaderboard.submit === 'function' && s.score > 0) {
+      const name = TD.leaderboard.getPlayerName();
+      TD.leaderboard.submit(name, s.score).catch(() => { /* ignore network errors */ });
+    }
+
     setTimeout(() => TD.showOverlay(true), 700);
   }
 
@@ -67,6 +75,14 @@
     s.speed = Math.min(MAX_SPEED, s.speed + SPEED_INCREMENT);
     s.distance += s.speed;
     s.score = Math.floor(s.distance * 400);
+
+    // Biome transition detection (distance is in game units; *100 == meters)
+    const meters = s.distance * 100;
+    const newBiomeIdx = TD.getActiveBiomeIndex(meters);
+    if (newBiomeIdx !== s.activeBiomeIndex) {
+      s.activeBiomeIndex = newBiomeIdx;
+      if (TD.showBiomeBanner) TD.showBiomeBanner(TD.biomes[newBiomeIdx].name);
+    }
 
     TD.playerUpdate();
     TD.obstaclesUpdate(s.speed);
