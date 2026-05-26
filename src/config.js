@@ -4,7 +4,7 @@
 
 window.TD = window.TD || {};
 
-const VERSION = 'build 8';
+const VERSION = 'build 9';
 const W = 800, H = 600;
 
 // Perspective
@@ -39,6 +39,12 @@ const OVERHEAD_CHANCE = 0.3;        // chance an obstacle is an overhead beam (s
 const COIN_INTERVAL_MIN = 35;
 const COIN_INTERVAL_RANGE = 25;
 
+// Invincibility power-up — collect this many coins in a row (without missing any)
+// to enter a short invincible phase. The phase lasts INVINCIBLE_FRAMES game frames
+// (~60 fps, so 300 frames ≈ 5 seconds).
+const COIN_STREAK_GOAL = 10;
+const INVINCIBLE_FRAMES = 300;
+
 // Helpers
 function laneToScreen(lane, t) {
   const y = VP_Y + (GROUND_BOTTOM - VP_Y) * t;
@@ -58,5 +64,6 @@ Object.assign(TD, {
   JUMP_VEL, GRAV, JUMP_CLEAR_THRESHOLD,
   SLIDE_DURATION, SLIDE_ACTIVE_START, SLIDE_ACTIVE_END,
   OBS_INTERVAL, OVERHEAD_CHANCE, COIN_INTERVAL_MIN, COIN_INTERVAL_RANGE,
+  COIN_STREAK_GOAL, INVINCIBLE_FRAMES,
   laneToScreen, pathHalfW
 });
