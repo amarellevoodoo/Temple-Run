@@ -3,7 +3,7 @@
 // ============================================
 
 (function() {
-  const { W, H, BASE_SPEED, MAX_SPEED, SPEED_INCREMENT, PLAYER_T, laneToScreen } = TD;
+  const { W, H, BASE_SPEED, MAX_SPEED, SPEED_INCREMENT, SPEED_RAMP_START_METERS, PLAYER_T, laneToScreen } = TD;
 
   const canvas = TD.canvas;
   const ctx = canvas.getContext('2d');
@@ -84,13 +84,17 @@
     // While paused, freeze world state — no speed ramp, no spawns, no movement.
     if (s.paused) return;
 
-    // Speed ramp
-    s.speed = Math.min(MAX_SPEED, s.speed + SPEED_INCREMENT);
     s.distance += s.speed;
     s.score = Math.floor(s.distance * 400);
 
     // Biome transition detection (distance is in game units; *100 == meters)
     const meters = s.distance * 100;
+
+    // Speed ramp: hold at BASE_SPEED until the warm-up distance is cleared,
+    // then accelerate gradually up to MAX_SPEED.
+    if (meters >= SPEED_RAMP_START_METERS) {
+      s.speed = Math.min(MAX_SPEED, s.speed + SPEED_INCREMENT);
+    }
     const newBiomeIdx = TD.getActiveBiomeIndex(meters);
     if (newBiomeIdx !== s.activeBiomeIndex) {
       s.activeBiomeIndex = newBiomeIdx;

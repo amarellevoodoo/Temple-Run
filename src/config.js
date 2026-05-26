@@ -16,9 +16,12 @@ const LANE_W = 55;
 const LANES = [-1, 0, 1];
 
 // Physics
-const BASE_SPEED = 0.004;
+const BASE_SPEED = 0.0025;
 const MAX_SPEED = 0.011;
 const SPEED_INCREMENT = 0.0000025;
+// Distance (in meters, as shown in the HUD) before the speed ramp kicks in.
+// Before this threshold the runner stays at BASE_SPEED so beginners can warm up.
+const SPEED_RAMP_START_METERS = 200;
 const JUMP_VEL = 0.026;
 const GRAV = 0.0012;
 const JUMP_CLEAR_THRESHOLD = 0.05;
@@ -51,7 +54,8 @@ function pathHalfW(t) {
 Object.assign(TD, {
   VERSION,
   W, H, VP_X, VP_Y, GROUND_BOTTOM, PLAYER_T, LANE_W, LANES,
-  BASE_SPEED, MAX_SPEED, SPEED_INCREMENT, JUMP_VEL, GRAV, JUMP_CLEAR_THRESHOLD,
+  BASE_SPEED, MAX_SPEED, SPEED_INCREMENT, SPEED_RAMP_START_METERS,
+  JUMP_VEL, GRAV, JUMP_CLEAR_THRESHOLD,
   SLIDE_DURATION, SLIDE_ACTIVE_START, SLIDE_ACTIVE_END,
   OBS_INTERVAL, OVERHEAD_CHANCE, COIN_INTERVAL_MIN, COIN_INTERVAL_RANGE,
   laneToScreen, pathHalfW
