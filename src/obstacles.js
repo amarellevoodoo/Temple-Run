@@ -1,10 +1,10 @@
 // ============================================
-// obstacles.js — Wall spawning, gaps, collision, drawing
+// obstacles.js — Holes and tree roots
 // ============================================
 
 (function() {
-  const { LANES, OBS_INTERVAL, OVERHEAD_CHANCE, PLAYER_T, JUMP_CLEAR_THRESHOLD,
-          VP_X, VP_Y, GROUND_BOTTOM, laneToScreen, pathHalfW } = TD;
+  const { OBS_INTERVAL, PLAYER_T, JUMP_CLEAR_THRESHOLD,
+          VP_X, VP_Y, GROUND_BOTTOM, pathHalfW } = TD;
 
   TD.obstacles = [];
   TD.obsTimer = 0;
@@ -14,26 +14,27 @@
     TD.obsTimer = Math.floor(OBS_INTERVAL * 0.7);
   };
 
+  // Pre-generate jagged edge points at spawn so they don't change each frame
+  function makeJags(count) {
+    const jags = [];
+    for (let i = 0; i <= count; i++) jags.push((Math.random() - 0.5) * 0.35);
+    return jags;
+  }
+
   TD.obstaclesUpdate = function(speed) {
     TD.obsTimer--;
 
     if (TD.obsTimer <= 0) {
-      if (Math.random() < OVERHEAD_CHANCE) {
-        // Overhead beam blocks the full path — must slide to pass.
-        TD.obstacles.push({
-          t: 0, hit: false,
-          type: 'overhead',
-          openLanes: [],
-          blockedLanes: [...LANES],
-        });
+      const type = Math.random() < 0.5 ? 'hole' : 'root';
+      const obs = { t: 0, hit: false, type };
+      if (type === 'hole') {
+        obs.holeDepth = 0.055 + Math.random() * 0.035;
+        obs.jagsNear  = makeJags(9);
+        obs.jagsFar   = makeJags(9);
       } else {
-        // Ground wall: randomly open 1 or 2 lanes out of 3
-        const openCount = Math.random() < 0.6 ? 1 : 2;
-        const shuffled = [...LANES].sort(() => Math.random() - 0.5);
-        const openLanes = shuffled.slice(0, openCount);
-        const blockedLanes = LANES.filter(l => !openLanes.includes(l));
-        TD.obstacles.push({ t: 0, hit: false, type: 'ground', openLanes, blockedLanes });
+        obs.rootSide = Math.random() < 0.5 ? -1 : 1;
       }
+      TD.obstacles.push(obs);
       TD.obsTimer = OBS_INTERVAL;
     }
 
@@ -41,23 +42,13 @@
     TD.obstacles = TD.obstacles.filter(o => o.t < 1.3);
   };
 
-  // Returns true if player died
+  // Both obstacle types require jumping to clear
   TD.obstaclesCheckCollision = function() {
     const p = TD.player;
-    const lowNow = TD.playerIsLow();
     for (let o of TD.obstacles) {
       if (o.hit) continue;
-      if (Math.abs(o.t - PLAYER_T) >= 0.045) continue;
-
-      if (o.type === 'overhead') {
-        // Beam spans every lane; only sliding lets you pass under it.
-        if (!lowNow) {
-          o.hit = true;
-          return true;
-        }
-      } else {
-        const inBlocked = o.blockedLanes.some(bl => Math.abs(bl - p.targetLane) < 0.5);
-        if (inBlocked && p.jumpT < JUMP_CLEAR_THRESHOLD) {
+      if (Math.abs(o.t - PLAYER_T) < 0.045) {
+        if (p.jumpT < JUMP_CLEAR_THRESHOLD) {
           o.hit = true;
           return true;
         }
@@ -67,168 +58,172 @@
   };
 
   TD.drawObstacle = function(ctx, obs) {
-    if (obs.t < 0 || obs.t > 1.15) return;
-    if (obs.type === 'overhead') {
-      drawOverheadBeam(ctx, obs);
-      return;
-    }
-    const pal = TD.activePalette();
-    const sC = laneToScreen(0, obs.t);
-    const scale = obs.t;
-    const y = sC.y;
-
-    // Height: tall with reduced perspective
-    const perspH = 50 * scale;
-    const fixedH = 35;
-    const bh = fixedH * 0.5 + perspH * 0.7;
-    if (bh < 4) return;
-
-    const hw = pathHalfW(scale);
-    const fullLeft = VP_X - hw;
-    const fullRight = VP_X + hw;
-    const laneW = (fullRight - fullLeft) / 3;
-
-    for (const bl of obs.blockedLanes) {
-      const segLeft = fullLeft + (bl + 1) * laneW;
-      const segRight = segLeft + laneW;
-      const segW = segRight - segLeft;
-
-      // Front face
-      const g = ctx.createLinearGradient(segLeft, y - bh, segRight, y);
-      g.addColorStop(0,    pal.obstacleFront[0]);
-      g.addColorStop(0.35, pal.obstacleFront[1]);
-      g.addColorStop(0.65, pal.obstacleFront[2]);
-      g.addColorStop(1,    pal.obstacleFront[3]);
-      ctx.fillStyle = g;
-      ctx.fillRect(segLeft, y - bh, segW, bh);
-
-      // Top surface
-      const topD = Math.max(1.5, 4 * scale);
-      ctx.fillStyle = pal.obstacleTop;
-      ctx.beginPath();
-      ctx.moveTo(segLeft, y - bh);
-      ctx.lineTo(segLeft + 2 * scale, y - bh - topD);
-      ctx.lineTo(segRight - 2 * scale, y - bh - topD);
-      ctx.lineTo(segRight, y - bh);
-      ctx.fill();
-
-      // Mortar lines
-      if (scale > 0.12) {
-        ctx.strokeStyle = 'rgba(30,40,20,0.2)';
-        ctx.lineWidth = 1;
-        const midH = y - bh * 0.5;
-        const midH2 = y - bh * 0.75;
-        ctx.beginPath(); ctx.moveTo(segLeft, midH); ctx.lineTo(segRight, midH); ctx.stroke();
-        if (bh > 20) {
-          ctx.beginPath(); ctx.moveTo(segLeft, midH2); ctx.lineTo(segRight, midH2); ctx.stroke();
-        }
-        const vCount = Math.max(1, Math.floor(segW / (12 + 10 * scale)));
-        for (let v = 1; v < vCount + 1; v++) {
-          const vx = segLeft + (segW / (vCount + 1)) * v;
-          ctx.beginPath(); ctx.moveTo(vx, y - bh); ctx.lineTo(vx, midH); ctx.stroke();
-        }
-        for (let v = 0; v < vCount + 1; v++) {
-          const vx = segLeft + (segW / (vCount + 1)) * (v + 0.5);
-          if (vx > segLeft && vx < segRight) {
-            ctx.beginPath(); ctx.moveTo(vx, midH); ctx.lineTo(vx, y); ctx.stroke();
-          }
-        }
-      }
-
-      // Moss / biome overgrowth
-      if (scale > 0.18) {
-        ctx.fillStyle = pal.obstacleMoss;
-        ctx.fillRect(segLeft + segW * 0.08, y - bh * 0.65, segW * 0.18, bh * 0.3);
-        if (segW > 20) ctx.fillRect(segLeft + segW * 0.6, y - bh * 0.4, segW * 0.15, bh * 0.25);
-      }
-
-      // Cracks
-      if (scale > 0.25) {
-        ctx.strokeStyle = 'rgba(25,35,15,0.3)'; ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(segLeft + segW * 0.35, y - bh);
-        ctx.lineTo(segLeft + segW * 0.4, y - bh * 0.2);
-        ctx.stroke();
-      }
-
-      // Edge pillars
-      ctx.fillStyle = pal.obstacleEdge;
-      const edgeW = Math.max(1, 2 * scale);
-      ctx.fillRect(segLeft, y - bh, edgeW, bh);
-      ctx.fillRect(segRight - edgeW, y - bh, edgeW, bh);
-    }
+    if (obs.t < 0.02 || obs.t > 1.15) return;
+    if (obs.type === 'hole') drawHole(ctx, obs);
+    else                     drawRoot(ctx, obs);
   };
 
-  // Horizontal beam stretched across the entire path — the player must slide under it.
-  function drawOverheadBeam(ctx, obs) {
-    const pal = TD.activePalette();
-    const scale = obs.t;
-    const sC = laneToScreen(0, obs.t);
-    const groundY = sC.y;
+  // ---- Hole ----
+  function drawHole(ctx, obs) {
+    const t = obs.t;
+    const y    = VP_Y + (GROUND_BOTTOM - VP_Y) * t;
+    const hw   = pathHalfW(t);
+    const tFar = Math.max(0.01, t - obs.holeDepth);
+    const yFar = VP_Y + (GROUND_BOTTOM - VP_Y) * tFar;
+    const hwFar = pathHalfW(tFar);
+    const n  = obs.jagsNear.length - 1;
 
-    const hw = pathHalfW(scale) * 1.05;
-    const left = VP_X - hw;
-    const right = VP_X + hw;
-    const fullW = right - left;
-
-    // Beam sits about player-shoulder height above the ground for this depth.
-    const beamCenterY = groundY - 55 * scale - 8;
-    const beamH = Math.max(4, 14 * scale + 4);
-    const beamTop = beamCenterY - beamH * 0.5;
-
-    // Support columns on either side, leading down to the ground.
-    const colW = Math.max(3, 6 * scale + 1);
-    ctx.fillStyle = pal.obstacleEdge;
-    ctx.fillRect(left, beamTop, colW, groundY - beamTop);
-    ctx.fillRect(right - colW, beamTop, colW, groundY - beamTop);
-
-    // Beam front face
-    const g = ctx.createLinearGradient(0, beamTop, 0, beamTop + beamH);
-    g.addColorStop(0,    pal.obstacleFront[0]);
-    g.addColorStop(0.35, pal.obstacleFront[1]);
-    g.addColorStop(0.65, pal.obstacleFront[2]);
-    g.addColorStop(1,    pal.obstacleFront[3]);
-    ctx.fillStyle = g;
-    ctx.fillRect(left, beamTop, fullW, beamH);
-
-    // Top facet for a bit of depth
-    const topD = Math.max(2, 5 * scale);
-    ctx.fillStyle = pal.obstacleTop;
+    // Dark void
+    ctx.fillStyle = '#04080a';
     ctx.beginPath();
-    ctx.moveTo(left, beamTop);
-    ctx.lineTo(left + 3 * scale, beamTop - topD);
-    ctx.lineTo(right - 3 * scale, beamTop - topD);
-    ctx.lineTo(right, beamTop);
+    // Near jagged edge (bottom of hole on screen)
+    for (let i = 0; i <= n; i++) {
+      const x = VP_X - hw + (i / n) * hw * 2 + obs.jagsNear[i] * hw * 0.5;
+      const yj = y + obs.jagsNear[i] * 6 * t;
+      i === 0 ? ctx.moveTo(x, yj) : ctx.lineTo(x, yj);
+    }
+    // Far edge (top of hole, closer to horizon)
+    for (let i = n; i >= 0; i--) {
+      const x = VP_X - hwFar + (i / n) * hwFar * 2 + obs.jagsFar[i] * hwFar * 0.4;
+      const yj = yFar + obs.jagsFar[i] * 4 * tFar;
+      ctx.lineTo(x, yj);
+    }
+    ctx.closePath();
     ctx.fill();
 
-    // Mortar lines along the beam
-    if (scale > 0.15) {
-      ctx.strokeStyle = 'rgba(30,40,20,0.25)';
-      ctx.lineWidth = 1;
-      const segs = Math.max(2, Math.floor(fullW / (30 + 20 * scale)));
-      for (let i = 1; i < segs; i++) {
-        const vx = left + (fullW / segs) * i;
-        ctx.beginPath();
-        ctx.moveTo(vx, beamTop);
-        ctx.lineTo(vx, beamTop + beamH);
-        ctx.stroke();
-      }
-      ctx.beginPath();
-      ctx.moveTo(left, beamCenterY);
-      ctx.lineTo(right, beamCenterY);
-      ctx.stroke();
-    }
+    // Depth gradient inside hole
+    const dg = ctx.createLinearGradient(0, yFar, 0, y);
+    dg.addColorStop(0, 'rgba(0,0,0,0.9)');
+    dg.addColorStop(1, 'rgba(0,0,0,0.1)');
+    ctx.fillStyle = dg;
+    ctx.beginPath();
+    ctx.moveTo(VP_X - hw, y); ctx.lineTo(VP_X + hw, y);
+    ctx.lineTo(VP_X + hwFar, yFar); ctx.lineTo(VP_X - hwFar, yFar);
+    ctx.closePath();
+    ctx.fill();
 
-    // Hanging moss / vines from the underside as a visual "duck under" cue.
-    if (scale > 0.2) {
-      ctx.fillStyle = pal.obstacleMoss;
-      const vineCount = 5;
-      for (let i = 0; i < vineCount; i++) {
-        const vx = left + (fullW * (i + 0.5)) / vineCount;
-        const vh = (8 + (i % 2) * 6) * scale + 4;
-        const vw = Math.max(2, 3 * scale);
-        ctx.fillRect(vx - vw * 0.5, beamTop + beamH, vw, vh);
+    // Near broken edge line
+    ctx.strokeStyle = `rgba(195,162,80,${0.55 + t * 0.35})`;
+    ctx.lineWidth = Math.max(1.5, 3.5 * t);
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const x = VP_X - hw + (i / n) * hw * 2 + obs.jagsNear[i] * hw * 0.5;
+      const yj = y + obs.jagsNear[i] * 6 * t;
+      i === 0 ? ctx.moveTo(x, yj) : ctx.lineTo(x, yj);
+    }
+    ctx.stroke();
+
+    // Far edge line
+    ctx.strokeStyle = `rgba(130,105,50,${0.35 + t * 0.2})`;
+    ctx.lineWidth = Math.max(1, 2 * t);
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const x = VP_X - hwFar + (i / n) * hwFar * 2 + obs.jagsFar[i] * hwFar * 0.4;
+      const yj = yFar + obs.jagsFar[i] * 4 * tFar;
+      i === 0 ? ctx.moveTo(x, yj) : ctx.lineTo(x, yj);
+    }
+    ctx.stroke();
+
+    // Broken stone chunks on near edge
+    if (t > 0.18) {
+      const cr = Math.floor(145 + t * 45), cg = Math.floor(112 + t * 33), cb = Math.floor(55 + t * 18);
+      ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
+      for (let i = 0; i < 5; i++) {
+        const cx2  = VP_X - hw * 0.75 + i * hw * 0.37;
+        const size = (3 + t * 7) * (0.5 + Math.abs(Math.sin(i * 2.1)) * 0.7);
+        const angle = obs.jagsNear[i] * 0.8;
+        ctx.save();
+        ctx.translate(cx2, y - size * 0.2);
+        ctx.rotate(angle);
+        ctx.fillRect(-size / 2, -size * 0.4, size, size * 0.7);
+        ctx.restore();
       }
     }
   }
+
+  // ---- Tree Root ----
+  function drawRoot(ctx, obs) {
+    const t    = obs.t;
+    const y    = VP_Y + (GROUND_BOTTOM - VP_Y) * t;
+    const hw   = pathHalfW(t);
+    const side = obs.rootSide;
+    const rootH = 9 + 20 * t;
+
+    // Root body — gnarled wood, solid color (no gradient in loop)
+    const rr = Math.floor(72 + t * 22), rg = Math.floor(50 + t * 15), rb = Math.floor(18 + t * 8);
+    ctx.fillStyle = `rgb(${rr},${rg},${rb})`;
+    ctx.beginPath();
+    ctx.moveTo(VP_X - hw, y);
+    ctx.lineTo(VP_X + hw, y);
+    // Gnarled top edge — bumpy profile
+    const bumps = 6;
+    for (let i = bumps; i >= 0; i--) {
+      const bx   = VP_X - hw + (i / bumps) * hw * 2;
+      const bump = rootH * (0.55 + Math.sin(i * 1.6 + side * 0.9) * 0.45);
+      ctx.lineTo(bx, y - bump);
+    }
+    ctx.closePath();
+    ctx.fill();
+
+    // Wood grain lines
+    ctx.strokeStyle = `rgba(18,10,3,0.45)`;
+    ctx.lineWidth = Math.max(0.5, 1.2 * t);
+    for (let i = 0; i < 3; i++) {
+      const lx = VP_X - hw * 0.5 + i * hw * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(lx, y);
+      ctx.quadraticCurveTo(lx + side * 4 * t, y - rootH * 0.55, lx - side * 2 * t, y - rootH * 0.85);
+      ctx.stroke();
+    }
+
+    // Top highlight
+    ctx.strokeStyle = `rgba(${Math.floor(rr + 40)},${Math.floor(rg + 28)},${Math.floor(rb + 10)},0.6)`;
+    ctx.lineWidth = Math.max(0.8, 1.5 * t);
+    ctx.beginPath();
+    ctx.moveTo(VP_X - hw, y - rootH * 0.7);
+    ctx.lineTo(VP_X + hw, y - rootH * 0.65);
+    ctx.stroke();
+
+    // Shadow cast below root
+    const sg = ctx.createLinearGradient(0, y, 0, y + 9 * t);
+    sg.addColorStop(0, 'rgba(0,0,0,0.38)');
+    sg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sg;
+    ctx.fillRect(VP_X - hw, y, hw * 2, 9 * t);
+
+    // Tree trunk at the side the root comes from
+    const trunkX  = VP_X + side * hw;
+    const trunkW  = 6 + 13 * t;
+    const trunkH  = 45 + 85 * t;
+    const trunkLeft = side > 0 ? trunkX : trunkX - trunkW;
+
+    ctx.fillStyle = `rgb(${Math.floor(38+t*12)},${Math.floor(24+t*8)},${Math.floor(8+t*4)})`;
+    ctx.fillRect(trunkLeft, y - trunkH, trunkW, trunkH + rootH);
+
+    // Bark lines on trunk
+    if (t > 0.15) {
+      ctx.strokeStyle = 'rgba(12,7,2,0.45)';
+      ctx.lineWidth = Math.max(0.5, t);
+      for (let i = 1; i <= 3; i++) {
+        const by = y - trunkH * (i / 4);
+        ctx.beginPath();
+        ctx.moveTo(trunkLeft, by); ctx.lineTo(trunkLeft + trunkW, by);
+        ctx.stroke();
+      }
+    }
+
+    // Foliage at top of trunk
+    if (t > 0.22) {
+      const cr2  = 12 + 22 * t;
+      const fcx  = trunkLeft + trunkW / 2;
+      const fcy  = y - trunkH - cr2 * 0.3;
+      ctx.fillStyle = '#162e0c';
+      ctx.beginPath(); ctx.arc(fcx, fcy, cr2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1e3d10';
+      ctx.beginPath(); ctx.arc(fcx - cr2 * 0.3 * side, fcy - cr2 * 0.3, cr2 * 0.72, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.beginPath(); ctx.arc(fcx + cr2 * 0.25, fcy + cr2 * 0.1, cr2 * 0.65, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
 })();
