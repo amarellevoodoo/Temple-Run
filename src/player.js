@@ -102,6 +102,22 @@
     ctx.beginPath(); ctx.arc(cx, headY - 1*s, headR * 1.05, Math.PI * 1.15, Math.PI * 1.85, true); ctx.fill();
     ctx.fillRect(cx - headR * 0.9, headY - headR * 0.3, headR * 1.8, headR * 0.6);
 
+    // Red hat
+    const hatBaseY = headY + headR * 0.25;
+    ctx.fillStyle = '#cc1100';
+    ctx.beginPath();
+    ctx.arc(cx, headY - headR * 0.1, headR * 1.05, Math.PI, Math.PI * 2);
+    ctx.rect(cx - headR * 1.05, headY - headR * 0.1, headR * 2.1, headR * 0.35);
+    ctx.fill();
+    ctx.fillStyle = '#aa0e00';
+    ctx.beginPath();
+    ctx.ellipse(cx, hatBaseY, headR * 1.85, headR * 0.38, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#881000';
+    ctx.beginPath();
+    ctx.ellipse(cx, headY + headR * 0.1, headR * 1.08, headR * 0.18, 0, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.restore();
   };
 })();
