@@ -282,3 +282,26 @@ canvas {
   font-style: italic;
   font-size: 12px;
 }
+
+#hud .version {
+  font-size: 12px;
+  color: rgba(170,200,138,0.6);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  align-self: flex-start;
+}
+
+#overlay .overlay-version {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  font-size: 11px;
+  color: rgba(170,200,138,0.4);
+}
+
+#overlay .overlay-version-large {
+  font-size: 18px;
+  color: #8ab060;
+  margin-bottom: 30px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(138,176,96,0.3);
+}

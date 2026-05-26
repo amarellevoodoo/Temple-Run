@@ -4,6 +4,7 @@
 
 window.TD = window.TD || {};
 
+const VERSION = 'build 6';
 const W = 800, H = 600;
 
 // Perspective
@@ -42,6 +43,7 @@ function pathHalfW(t) {
 
 // Export to namespace
 Object.assign(TD, {
+  VERSION,
   W, H, VP_X, VP_Y, GROUND_BOTTOM, PLAYER_T, LANE_W, LANES,
   BASE_SPEED, MAX_SPEED, SPEED_INCREMENT, JUMP_VEL, GRAV, JUMP_CLEAR_THRESHOLD,
   OBS_INTERVAL, COIN_INTERVAL_MIN, COIN_INTERVAL_RANGE,
