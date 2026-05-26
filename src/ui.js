@@ -19,6 +19,7 @@
   const $versionDisplay = document.getElementById('versionDisplay');
   const $overlayVersion = document.getElementById('overlayVersion');
   const $overlayVersionLarge = document.getElementById('overlayVersionLarge');
+  const $muteBtn        = document.getElementById('muteBtn');
 
   // ---- Overlay ----
   TD.showOverlay = function(showScore) {
@@ -119,6 +120,15 @@
       }
     });
   });
+
+  // ---- Mute toggle ----
+  if ($muteBtn) {
+    $muteBtn.addEventListener('click', () => {
+      TD.audio.toggle();
+      TD.music.setMuted(TD.audio.muted);
+      $muteBtn.textContent = TD.audio.muted ? '\uD83D\uDD07' : '\uD83D\uDD0A';
+    });
+  }
 
   // ---- Version display on overlay ----
   if ($overlayVersion) $overlayVersion.textContent = TD.VERSION;

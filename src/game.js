@@ -43,6 +43,9 @@
     s.running = false;
     s.screenShake = 12;
 
+    TD.sfxDeath();
+    TD.music.stop();
+
     const ps = laneToScreen(TD.player.targetLane, PLAYER_T);
     TD.spawnParticles(ps.x, ps.y - 25, '#ff4400', 18);
     TD.spawnParticles(ps.x, ps.y - 25, '#ffaa00', 10);

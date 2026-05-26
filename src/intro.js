@@ -238,6 +238,9 @@
     const ctx = canvas.getContext('2d');
     const startTime = Date.now();
 
+    TD.audio.ensureCtx();
+    TD.music.start();
+
     const groundY = H * 0.92;
     const buildingX = 160;
 

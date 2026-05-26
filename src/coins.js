@@ -35,6 +35,7 @@
         c.collected = true;
         TD.totalCoins++;
         TD.state.score += 100;
+        TD.sfxCoin();
         const s = laneToScreen(c.lane, c.t);
         TD.spawnParticles(s.x, s.y - 15, '#ffd700', 6);
       }

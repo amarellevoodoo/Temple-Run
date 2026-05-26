@@ -152,6 +152,22 @@ canvas {
 .hud-right {
   display: flex;
   align-items: center;
+  gap: 10px;
+}
+
+.mute-btn {
+  font-size: 18px;
+  cursor: pointer;
+  pointer-events: all;
+  opacity: 0.7;
+  transition: opacity 0.2s, transform 0.15s;
+  user-select: none;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.8));
+}
+
+.mute-btn:hover {
+  opacity: 1;
+  transform: scale(1.15);
 }
 
 .biome-chip {

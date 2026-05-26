@@ -28,6 +28,7 @@
     </div>
     <div class="hud-right">
       <div class="biome-chip" id="biomeChip">Jungle Temple</div>
+      <div class="mute-btn" id="muteBtn">🔊</div>
     </div>
     <div class="version" id="versionDisplay"></div>
   </div>
@@ -63,6 +64,8 @@
 <!-- Load order matters: config first, biomes next (so drawers can read palettes), then modules, game.js last -->
 <script src="src/config.js"></script>
 <script src="src/biomes.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/music.js"></script>
 <script>
   // Make canvas available to all modules
   TD.canvas = document.getElementById('game');
