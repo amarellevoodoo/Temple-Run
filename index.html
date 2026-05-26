@@ -28,8 +28,22 @@
     </div>
     <div class="hud-right">
       <div class="biome-chip" id="biomeChip">Jungle Temple</div>
+      <button id="pauseBtn" class="pause-btn" type="button" aria-label="Pause">
+        <span class="pause-icon" aria-hidden="true">
+          <span class="bar"></span><span class="bar"></span>
+        </span>
+        <span class="play-icon" aria-hidden="true"></span>
+      </button>
     </div>
     <div class="version" id="versionDisplay"></div>
+  </div>
+
+  <div id="pauseOverlay" class="pause-overlay">
+    <div class="pause-card">
+      <h2>PAUSED</h2>
+      <div class="pause-hint">Press SPACE or tap below to resume</div>
+      <button id="resumeBtn" type="button">RESUME</button>
+    </div>
   </div>
 
   <div id="biomeBanner" class="biome-banner"></div>
@@ -54,7 +68,9 @@
 
     <div class="controls-hint">
       &larr; &rarr; or A D &mdash; Switch Lanes<br>
-      &uarr; or W or SPACE &mdash; Jump
+      &uarr; or W &mdash; Jump<br>
+      &darr; or S &mdash; Slide<br>
+      SPACE &mdash; Pause
     </div>
     <div class="overlay-version" id="overlayVersion"></div>
   </div>

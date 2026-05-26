@@ -3,17 +3,32 @@
 // ============================================
 
 (function() {
-  const { LANES, JUMP_VEL } = TD;
+  const { JUMP_VEL } = TD;
 
   document.addEventListener('keydown', e => {
-    if (!TD.state.running) return;
+    const s = TD.state;
+
+    // Space toggles pause whenever a run is in progress (paused or not),
+    // even though all other gameplay input is gated on running + !paused.
+    if (e.code === 'Space') {
+      if (s.running && !s.gameOver && TD.togglePause) {
+        TD.togglePause();
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (!s.running || s.paused) return;
     const p = TD.player;
 
     if (e.code === 'ArrowLeft'  || e.code === 'KeyA') p.targetLane = Math.max(-1, p.targetLane - 1);
     if (e.code === 'ArrowRight' || e.code === 'KeyD') p.targetLane = Math.min( 1, p.targetLane + 1);
-    if ((e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') && !p.jumping) {
+    if ((e.code === 'ArrowUp' || e.code === 'KeyW') && !p.jumping && !p.sliding) {
       p.jumping = true;
       p.jumpVel = JUMP_VEL;
+    }
+    if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+      TD.playerStartSlide();
     }
     e.preventDefault();
   });
@@ -27,7 +42,8 @@
   });
 
   TD.canvas.addEventListener('touchend', e => {
-    if (!TD.state.running) return;
+    const s = TD.state;
+    if (!s.running || s.paused) return;
     const p = TD.player;
     const dx = e.changedTouches[0].clientX - swX;
     const dy = e.changedTouches[0].clientY - swY;
@@ -35,9 +51,11 @@
     if (Math.abs(dx) > Math.abs(dy)) {
       if (dx > 30)       p.targetLane = Math.min(1, p.targetLane + 1);
       else if (dx < -30) p.targetLane = Math.max(-1, p.targetLane - 1);
-    } else if (dy < -30 && !p.jumping) {
+    } else if (dy < -30 && !p.jumping && !p.sliding) {
       p.jumping = true;
       p.jumpVel = JUMP_VEL;
+    } else if (dy > 30) {
+      TD.playerStartSlide();
     }
   });
 })();

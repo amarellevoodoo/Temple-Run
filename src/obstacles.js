@@ -3,7 +3,7 @@
 // ============================================
 
 (function() {
-  const { LANES, OBS_INTERVAL, PLAYER_T, JUMP_CLEAR_THRESHOLD,
+  const { LANES, OBS_INTERVAL, OVERHEAD_CHANCE, PLAYER_T, JUMP_CLEAR_THRESHOLD,
           VP_X, VP_Y, GROUND_BOTTOM, laneToScreen, pathHalfW } = TD;
 
   TD.obstacles = [];
@@ -18,12 +18,22 @@
     TD.obsTimer--;
 
     if (TD.obsTimer <= 0) {
-      // Randomly open 1 or 2 lanes out of 3
-      const openCount = Math.random() < 0.6 ? 1 : 2;
-      const shuffled = [...LANES].sort(() => Math.random() - 0.5);
-      const openLanes = shuffled.slice(0, openCount);
-      const blockedLanes = LANES.filter(l => !openLanes.includes(l));
-      TD.obstacles.push({ t: 0, hit: false, openLanes, blockedLanes });
+      if (Math.random() < OVERHEAD_CHANCE) {
+        // Overhead beam blocks the full path — must slide to pass.
+        TD.obstacles.push({
+          t: 0, hit: false,
+          type: 'overhead',
+          openLanes: [],
+          blockedLanes: [...LANES],
+        });
+      } else {
+        // Ground wall: randomly open 1 or 2 lanes out of 3
+        const openCount = Math.random() < 0.6 ? 1 : 2;
+        const shuffled = [...LANES].sort(() => Math.random() - 0.5);
+        const openLanes = shuffled.slice(0, openCount);
+        const blockedLanes = LANES.filter(l => !openLanes.includes(l));
+        TD.obstacles.push({ t: 0, hit: false, type: 'ground', openLanes, blockedLanes });
+      }
       TD.obsTimer = OBS_INTERVAL;
     }
 
@@ -34,9 +44,18 @@
   // Returns true if player died
   TD.obstaclesCheckCollision = function() {
     const p = TD.player;
+    const lowNow = TD.playerIsLow();
     for (let o of TD.obstacles) {
       if (o.hit) continue;
-      if (Math.abs(o.t - PLAYER_T) < 0.045) {
+      if (Math.abs(o.t - PLAYER_T) >= 0.045) continue;
+
+      if (o.type === 'overhead') {
+        // Beam spans every lane; only sliding lets you pass under it.
+        if (!lowNow) {
+          o.hit = true;
+          return true;
+        }
+      } else {
         const inBlocked = o.blockedLanes.some(bl => Math.abs(bl - p.targetLane) < 0.5);
         if (inBlocked && p.jumpT < JUMP_CLEAR_THRESHOLD) {
           o.hit = true;
@@ -49,6 +68,10 @@
 
   TD.drawObstacle = function(ctx, obs) {
     if (obs.t < 0 || obs.t > 1.15) return;
+    if (obs.type === 'overhead') {
+      drawOverheadBeam(ctx, obs);
+      return;
+    }
     const pal = TD.activePalette();
     const sC = laneToScreen(0, obs.t);
     const scale = obs.t;
@@ -135,4 +158,77 @@
       ctx.fillRect(segRight - edgeW, y - bh, edgeW, bh);
     }
   };
+
+  // Horizontal beam stretched across the entire path — the player must slide under it.
+  function drawOverheadBeam(ctx, obs) {
+    const pal = TD.activePalette();
+    const scale = obs.t;
+    const sC = laneToScreen(0, obs.t);
+    const groundY = sC.y;
+
+    const hw = pathHalfW(scale) * 1.05;
+    const left = VP_X - hw;
+    const right = VP_X + hw;
+    const fullW = right - left;
+
+    // Beam sits about player-shoulder height above the ground for this depth.
+    const beamCenterY = groundY - 55 * scale - 8;
+    const beamH = Math.max(4, 14 * scale + 4);
+    const beamTop = beamCenterY - beamH * 0.5;
+
+    // Support columns on either side, leading down to the ground.
+    const colW = Math.max(3, 6 * scale + 1);
+    ctx.fillStyle = pal.obstacleEdge;
+    ctx.fillRect(left, beamTop, colW, groundY - beamTop);
+    ctx.fillRect(right - colW, beamTop, colW, groundY - beamTop);
+
+    // Beam front face
+    const g = ctx.createLinearGradient(0, beamTop, 0, beamTop + beamH);
+    g.addColorStop(0,    pal.obstacleFront[0]);
+    g.addColorStop(0.35, pal.obstacleFront[1]);
+    g.addColorStop(0.65, pal.obstacleFront[2]);
+    g.addColorStop(1,    pal.obstacleFront[3]);
+    ctx.fillStyle = g;
+    ctx.fillRect(left, beamTop, fullW, beamH);
+
+    // Top facet for a bit of depth
+    const topD = Math.max(2, 5 * scale);
+    ctx.fillStyle = pal.obstacleTop;
+    ctx.beginPath();
+    ctx.moveTo(left, beamTop);
+    ctx.lineTo(left + 3 * scale, beamTop - topD);
+    ctx.lineTo(right - 3 * scale, beamTop - topD);
+    ctx.lineTo(right, beamTop);
+    ctx.fill();
+
+    // Mortar lines along the beam
+    if (scale > 0.15) {
+      ctx.strokeStyle = 'rgba(30,40,20,0.25)';
+      ctx.lineWidth = 1;
+      const segs = Math.max(2, Math.floor(fullW / (30 + 20 * scale)));
+      for (let i = 1; i < segs; i++) {
+        const vx = left + (fullW / segs) * i;
+        ctx.beginPath();
+        ctx.moveTo(vx, beamTop);
+        ctx.lineTo(vx, beamTop + beamH);
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.moveTo(left, beamCenterY);
+      ctx.lineTo(right, beamCenterY);
+      ctx.stroke();
+    }
+
+    // Hanging moss / vines from the underside as a visual "duck under" cue.
+    if (scale > 0.2) {
+      ctx.fillStyle = pal.obstacleMoss;
+      const vineCount = 5;
+      for (let i = 0; i < vineCount; i++) {
+        const vx = left + (fullW * (i + 0.5)) / vineCount;
+        const vh = (8 + (i % 2) * 6) * scale + 4;
+        const vw = Math.max(2, 3 * scale);
+        ctx.fillRect(vx - vw * 0.5, beamTop + beamH, vw, vh);
+      }
+    }
+  }
 })();
