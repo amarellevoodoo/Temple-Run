@@ -39,16 +39,26 @@
     }
 
     for (let o of TD.obstacles) o.t += speed;
-    TD.obstacles = TD.obstacles.filter(o => o.t < 1.3);
+    TD.obstacles = TD.obstacles.filter(o => o.t < 1.3 && !o.smashed);
   };
 
-  // Both obstacle types require jumping to clear
+  // Both obstacle types require jumping to clear — unless the player is
+  // currently invincible, in which case the obstacle is destroyed instead.
   TD.obstaclesCheckCollision = function() {
     const p = TD.player;
+    const invincible = TD.state.invincibleFrames > 0;
     for (let o of TD.obstacles) {
-      if (o.hit) continue;
+      if (o.hit || o.smashed) continue;
       if (Math.abs(o.t - PLAYER_T) < 0.045) {
         if (p.jumpT < JUMP_CLEAR_THRESHOLD) {
+          if (invincible) {
+            // Smash through: mark for removal next update and spray sparks
+            o.smashed = true;
+            const ps = TD.laneToScreen(p.targetLane, PLAYER_T);
+            TD.spawnParticles(ps.x, ps.y - 20, '#ffd700', 10);
+            TD.spawnParticles(ps.x, ps.y - 20, '#ffffff', 6);
+            continue;
+          }
           o.hit = true;
           return true;
         }
@@ -58,7 +68,7 @@
   };
 
   TD.drawObstacle = function(ctx, obs) {
-    if (obs.t < 0.02 || obs.t > 1.15) return;
+    if (obs.t < 0.02 || obs.t > 1.15 || obs.smashed) return;
     if (obs.type === 'hole') drawHole(ctx, obs);
     else                     drawRoot(ctx, obs);
   };

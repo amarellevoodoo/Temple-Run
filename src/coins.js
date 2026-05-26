@@ -4,7 +4,7 @@
 
 (function() {
   const { LANES, PLAYER_T, COIN_INTERVAL_MIN, COIN_INTERVAL_RANGE,
-          laneToScreen } = TD;
+          COIN_STREAK_GOAL, laneToScreen } = TD;
 
   TD.coins = [];
   TD.coinTimer = 30;
@@ -27,16 +27,38 @@
 
     for (let c of TD.coins) c.t += speed;
 
-    // Collection
+    // Collection / miss detection
+    //   - Collecting a coin grows the consecutive-coin streak; reaching
+    //     COIN_STREAK_GOAL triggers the invincibility power-up.
+    //   - A coin that slides past the collection window without being
+    //     collected counts as a "miss" and resets the streak.
     const p = TD.player;
     for (let c of TD.coins) {
-      if (c.collected) continue;
-      if (Math.abs(c.t - PLAYER_T) < 0.06 && Math.abs(c.lane - p.targetLane) < 0.6) {
+      if (c.collected || c.missed) continue;
+
+      const dt = c.t - PLAYER_T;
+      const inWindow = Math.abs(dt) < 0.06 && Math.abs(c.lane - p.targetLane) < 0.6;
+
+      if (inWindow) {
         c.collected = true;
         TD.totalCoins++;
         TD.state.score += 100;
+        // Streak only progresses while NOT already invincible — the phase is
+        // a "reward" so the player can ignore coins safely until it ends.
+        if (TD.state.invincibleFrames <= 0) {
+          TD.state.coinStreak++;
+          if (TD.state.coinStreak >= COIN_STREAK_GOAL) {
+            TD.activateInvincibility();
+          }
+        }
         const s = laneToScreen(c.lane, c.t);
         TD.spawnParticles(s.x, s.y - 15, '#ffd700', 6);
+      } else if (dt > 0.06) {
+        // Coin moved past the player without being collected
+        c.missed = true;
+        if (TD.state.invincibleFrames <= 0) {
+          TD.state.coinStreak = 0;
+        }
       }
     }
 

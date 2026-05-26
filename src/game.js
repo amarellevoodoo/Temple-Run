@@ -3,7 +3,8 @@
 // ============================================
 
 (function() {
-  const { W, H, BASE_SPEED, MAX_SPEED, SPEED_INCREMENT, SPEED_RAMP_START_METERS, PLAYER_T, laneToScreen } = TD;
+  const { W, H, BASE_SPEED, MAX_SPEED, SPEED_INCREMENT, SPEED_RAMP_START_METERS,
+          INVINCIBLE_FRAMES, PLAYER_T, laneToScreen } = TD;
 
   const canvas = TD.canvas;
   const ctx = canvas.getContext('2d');
@@ -19,6 +20,8 @@
     distance: 0,
     screenShake: 0,
     activeBiomeIndex: 0,
+    coinStreak: 0,         // consecutive coins collected without missing any
+    invincibleFrames: 0,   // remaining frames of the invincibility power-up
   };
 
   // ---- Init ----
@@ -31,11 +34,25 @@
     s.gameOver = false;
     s.paused = false;
     s.activeBiomeIndex = 0;
+    s.coinStreak = 0;
+    s.invincibleFrames = 0;
 
     TD.playerReset();
     TD.obstaclesReset();
     TD.coinsReset();
     TD.particlesReset();
+  };
+
+  // ---- Invincibility power-up ----
+  // Triggered from coins.js when the player completes a coin streak.
+  // Spawns a sparkle burst at the player's feet and starts the countdown.
+  TD.activateInvincibility = function() {
+    const s = TD.state;
+    s.invincibleFrames = INVINCIBLE_FRAMES;
+    s.coinStreak = 0;
+    const ps = laneToScreen(TD.player.targetLane, PLAYER_T);
+    TD.spawnParticles(ps.x, ps.y - 30, '#ffd700', 18);
+    TD.spawnParticles(ps.x, ps.y - 30, '#fff3c0', 10);
   };
 
   // ---- Pause ----
@@ -95,6 +112,9 @@
     if (meters >= SPEED_RAMP_START_METERS) {
       s.speed = Math.min(MAX_SPEED, s.speed + SPEED_INCREMENT);
     }
+
+    // Tick down the invincibility timer
+    if (s.invincibleFrames > 0) s.invincibleFrames--;
     const newBiomeIdx = TD.getActiveBiomeIndex(meters);
     if (newBiomeIdx !== s.activeBiomeIndex) {
       s.activeBiomeIndex = newBiomeIdx;

@@ -36,6 +36,24 @@
       </button>
     </div>
     <div class="version" id="versionDisplay"></div>
+
+    <div class="powerup-hud" id="powerupHud">
+      <div class="streak-bar" id="streakBar">
+        <div class="streak-label">
+          <span class="streak-icon" aria-hidden="true">●</span>
+          <span id="streakLabel">0 / 10</span>
+        </div>
+        <div class="streak-track">
+          <div class="streak-fill" id="streakFill"></div>
+        </div>
+      </div>
+
+      <div class="invincible-timer" id="invincibleTimer" style="display:none;">
+        <span class="invincible-icon" aria-hidden="true">★</span>
+        <span class="invincible-text">INVINCIBLE</span>
+        <span class="invincible-count" id="invincibleCount">5</span><span class="invincible-suffix">s</span>
+      </div>
+    </div>
   </div>
 
   <div id="pauseOverlay" class="pause-overlay">
