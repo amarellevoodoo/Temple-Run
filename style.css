@@ -145,3 +145,11 @@ canvas {
   font-size: 11px;
   color: rgba(170,200,138,0.4);
 }
+
+#overlay .overlay-version-large {
+  font-size: 18px;
+  color: #8ab060;
+  margin-bottom: 30px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(138,176,96,0.3);
+}

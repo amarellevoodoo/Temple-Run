@@ -39,6 +39,7 @@
 
   // Show version on overlay
   document.getElementById('overlayVersion').textContent = TD.VERSION;
+  document.getElementById('overlayVersionLarge').textContent = TD.VERSION;
 
   // Show high score on load
   const hs = parseInt(localStorage.getItem('tdH2') || '0');
