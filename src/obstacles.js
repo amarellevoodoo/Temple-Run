@@ -485,9 +485,6 @@
       ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.arc(VP_X + cr * 0.22, fcy + cr * 0.12, cr * 0.68, 0, Math.PI * 2); ctx.fill();
     }
 
-    // Ground shadow
-    ctx.fillStyle = `rgba(0,0,0,${0.14 + t * 0.18})`;
-    ctx.fillRect(VP_X - hw, y, hw * 2, 9 * t);
   }
 
 })();

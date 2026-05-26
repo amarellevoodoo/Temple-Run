@@ -62,24 +62,17 @@
 
     ctx.save();
 
-    // Shadow
-    const shadowPs = laneToScreen(p.lane, PLAYER_T);
-    const shAlpha = Math.max(0.06, 0.35 - p.jumpT * 2.5);
-    const shSize = 16 - p.jumpT * 25;
-    ctx.fillStyle = `rgba(0,0,0,${shAlpha})`;
-    ctx.beginPath();
-    ctx.ellipse(shadowPs.x, shadowPs.y, Math.max(5, shSize), Math.max(2, shSize * 0.3), 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Character — seen from behind
+    // Character — seen from behind (shadow drawn in game.js z-sort pass)
     const s = depthScale;
     const headR = 5 * s;
     const bodyTop = baseY - 30 * s - bob;
     const hipY = baseY - 12 * s - bob;
     const shoulderY = bodyTop + 4 * s;
     const headY = bodyTop - headR;
-    const legSw = Math.sin(t) * 8 * s;
-    const armSw = Math.sin(t) * 10 * s;
+    const runPhase = p.jumping ? 0 : t * 2;
+    const legSw = Math.sin(runPhase) * 11 * s;
+    const armSw = Math.sin(runPhase + Math.PI) * 12 * s;
+    const legLift = p.jumping ? 0 : Math.max(0, Math.sin(runPhase)) * 4 * s;
 
     // Golden aura behind the character while invincible
     if (invincible) {
@@ -99,7 +92,7 @@
     // Legs
     ctx.strokeStyle = invincible ? '#d4b070' : '#8a7a5a';
     ctx.lineWidth = 3.5 * s; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(cx - 3*s, hipY); ctx.lineTo(cx - 3*s - legSw, baseY - bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - 3*s, hipY); ctx.lineTo(cx - 3*s - legSw, baseY - bob - legLift); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(cx + 3*s, hipY); ctx.lineTo(cx + 3*s + legSw, baseY - bob); ctx.stroke();
 
     // Torso — tinted gold while invincible
