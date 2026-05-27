@@ -8,10 +8,19 @@
 
   TD.obstacles = [];
   TD.obsTimer = 0;
+  TD.tunnelCooldown = 0;
+
+  // Minimum frames between two tunnel spawns. A slide lasts SLIDE_DURATION
+  // (150) frames, so back-to-back tunnels at the normal 145-frame spawn
+  // cadence leave only ~10 frames to start a second slide — faster than human
+  // reaction. Spacing tunnels at least ~180 frames apart gives the player
+  // ~45 frames (~0.75 s) after one slide ends before the next tunnel arrives.
+  const TUNNEL_COOLDOWN_FRAMES = 180;
 
   TD.obstaclesReset = function() {
     TD.obstacles = [];
     TD.obsTimer = Math.floor(OBS_INTERVAL * 0.7);
+    TD.tunnelCooldown = 0;
   };
 
   // Pre-generate jagged edge points at spawn so they don't change each frame
@@ -23,10 +32,17 @@
 
   TD.obstaclesUpdate = function(speed) {
     TD.obsTimer--;
+    if (TD.tunnelCooldown > 0) TD.tunnelCooldown--;
 
     if (TD.obsTimer <= 0) {
       const roll = Math.random();
-      const type = roll < 0.33 ? 'hole' : roll < 0.66 ? 'root' : 'tunnel';
+      let type = roll < 0.33 ? 'hole' : roll < 0.66 ? 'root' : 'tunnel';
+      // Avoid back-to-back tunnels: if a tunnel spawned recently, swap this
+      // one for a ground obstacle instead.
+      if (type === 'tunnel' && TD.tunnelCooldown > 0) {
+        type = Math.random() < 0.5 ? 'hole' : 'root';
+      }
+      if (type === 'tunnel') TD.tunnelCooldown = TUNNEL_COOLDOWN_FRAMES;
       const obs = { t: 0, hit: false, type };
       if (type === 'hole') {
         obs.holeDepth = 0.10 + Math.random() * 0.06;
