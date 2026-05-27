@@ -130,7 +130,13 @@
   };
 
   // ---- Leaderboard rendering ----
+  // The visible leaderboard UI (GLOBAL LEADERBOARD list + World Best line)
+  // has been removed from the overlay for now. The render helpers below stay
+  // in place because they also drive the outrun percentile, but they no-op
+  // safely when their target DOM nodes are absent. Re-adding the elements to
+  // index.html is enough to bring the visible leaderboard back.
   function renderEmpty(message) {
+    if (!$leaderboardList) return;
     $leaderboardList.innerHTML = '<li class="leaderboard-empty">' + message + '</li>';
   }
 
@@ -160,14 +166,16 @@
   function renderEntries(entries) {
     if (!entries || entries.length === 0) {
       renderEmpty('No scores yet. Be the first!');
-      $worldBest.textContent = '';
+      if ($worldBest) $worldBest.textContent = '';
       // No real competitors yet — fall back to the synthetic pool so the
       // percentile line still appears after a run.
       showOutrunFromScores(FAKE_COLLEAGUES);
       return;
     }
     const myName = TD.leaderboard.getPlayerName();
-    $worldBest.textContent = 'World Best: ' + entries[0].name + ' - ' + entries[0].score.toLocaleString();
+    if ($worldBest) {
+      $worldBest.textContent = 'World Best: ' + entries[0].name + ' - ' + entries[0].score.toLocaleString();
+    }
 
     // Percentile against everyone except the player's own leaderboard entry
     // (that entry stores their best-ever score, which would unfairly skew any
@@ -175,6 +183,7 @@
     const competitors = entries.filter(e => e.name !== myName).map(e => e.score);
     showOutrunFromScores(competitors.length > 0 ? competitors : FAKE_COLLEAGUES);
 
+    if (!$leaderboardList) return;
     // Visible list still shows only the top 10; the rest of the fetched pool
     // is only used for the percentile above.
     const visible = entries.slice(0, 10);
@@ -198,7 +207,7 @@
   function refreshLeaderboard() {
     if (!TD.leaderboard || !TD.leaderboard.isConfigured()) {
       renderEmpty('Leaderboard offline (configure src/leaderboard.js).');
-      $worldBest.textContent = '';
+      if ($worldBest) $worldBest.textContent = '';
       // Offline mode: still show the percentile against the synthetic pool.
       showOutrunFromScores(FAKE_COLLEAGUES);
       return;
