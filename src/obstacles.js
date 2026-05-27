@@ -4,23 +4,24 @@
 
 (function() {
   const { OBS_INTERVAL, PLAYER_T, JUMP_CLEAR_THRESHOLD,
-          VP_X, VP_Y, GROUND_BOTTOM, pathHalfW } = TD;
+          VP_X, VP_Y, GROUND_BOTTOM, LANE_W, pathHalfW } = TD;
 
   TD.obstacles = [];
   TD.obsTimer = 0;
   TD.tunnelCooldown = 0;
+  TD.collapseCooldown = 0;
 
-  // Minimum frames between two tunnel spawns. A slide lasts SLIDE_DURATION
-  // (150) frames, so back-to-back tunnels at the normal 145-frame spawn
-  // cadence leave only ~10 frames to start a second slide — faster than human
-  // reaction. Spacing tunnels at least ~180 frames apart gives the player
-  // ~45 frames (~0.75 s) after one slide ends before the next tunnel arrives.
   const TUNNEL_COOLDOWN_FRAMES = 180;
+  // Collapse obstacles are very long (depth 0.35-0.45) and require the player
+  // to be in a specific lane. Back-to-back collapses with different safe lanes
+  // are impossible to survive, so space them far apart (~5 s at 60 fps).
+  const COLLAPSE_COOLDOWN_FRAMES = 300;
 
   TD.obstaclesReset = function() {
     TD.obstacles = [];
     TD.obsTimer = Math.floor(OBS_INTERVAL * 0.7);
     TD.tunnelCooldown = 0;
+    TD.collapseCooldown = 0;
   };
 
   // Pre-generate jagged edge points at spawn so they don't change each frame
@@ -33,16 +34,19 @@
   TD.obstaclesUpdate = function(speed) {
     TD.obsTimer--;
     if (TD.tunnelCooldown > 0) TD.tunnelCooldown--;
+    if (TD.collapseCooldown > 0) TD.collapseCooldown--;
 
     if (TD.obsTimer <= 0) {
       const roll = Math.random();
-      let type = roll < 0.33 ? 'hole' : roll < 0.66 ? 'root' : 'tunnel';
-      // Avoid back-to-back tunnels: if a tunnel spawned recently, swap this
-      // one for a ground obstacle instead.
+      let type = roll < 0.25 ? 'hole' : roll < 0.50 ? 'root' : roll < 0.75 ? 'tunnel' : 'collapse';
       if (type === 'tunnel' && TD.tunnelCooldown > 0) {
         type = Math.random() < 0.5 ? 'hole' : 'root';
       }
+      if (type === 'collapse' && TD.collapseCooldown > 0) {
+        type = Math.random() < 0.5 ? 'hole' : 'root';
+      }
       if (type === 'tunnel') TD.tunnelCooldown = TUNNEL_COOLDOWN_FRAMES;
+      if (type === 'collapse') TD.collapseCooldown = COLLAPSE_COOLDOWN_FRAMES;
       const obs = { t: 0, hit: false, type };
       if (type === 'hole') {
         obs.holeDepth = 0.10 + Math.random() * 0.06;
@@ -50,6 +54,29 @@
         obs.jagsFar   = makeJags(9);
       } else if (type === 'root') {
         obs.rootSide = Math.random() < 0.5 ? -1 : 1;
+      } else if (type === 'collapse') {
+        const lanes = [-1, 0, 1];
+        const safeLane = lanes[Math.floor(Math.random() * 3)];
+        // 60% chance only 1 safe lane, 40% chance 2 safe lanes
+        if (Math.random() < 0.4) {
+          const remaining = lanes.filter(l => l !== safeLane);
+          const secondSafe = remaining[Math.floor(Math.random() * 2)];
+          obs.blockedLanes = lanes.filter(l => l !== safeLane && l !== secondSafe);
+        } else {
+          obs.blockedLanes = lanes.filter(l => l !== safeLane);
+        }
+        obs.safeLanes = lanes.filter(l => !obs.blockedLanes.includes(l));
+        obs.collapseDepth = 0.35 + Math.random() * 0.10;
+        obs.jagsPerLane = {};
+        obs.flameSeeds = {};
+        for (const l of obs.blockedLanes) {
+          obs.jagsPerLane[l] = makeJags(7);
+          const seeds = [];
+          for (let i = 0; i < 8; i++) {
+            seeds.push({ phase: Math.random() * Math.PI * 2, speed: 2.5 + Math.random() * 2, xOff: (Math.random() - 0.5) * 0.8 });
+          }
+          obs.flameSeeds[l] = seeds;
+        }
       }
       TD.obstacles.push(obs);
       TD.obsTimer = OBS_INTERVAL;
@@ -66,10 +93,15 @@
     for (let o of TD.obstacles) {
       if (o.hit || o.smashed) continue;
       const hitWindow = o.type === 'tunnel' ? 0.025 : 0.045;
-      if (Math.abs(o.t - PLAYER_T) < hitWindow) {
+      const inRange = o.type === 'collapse'
+        ? (o.t * (1 - o.collapseDepth)) <= PLAYER_T && PLAYER_T <= o.t
+        : Math.abs(o.t - PLAYER_T) < hitWindow;
+      if (inRange) {
         let failed = false;
         if (o.type === 'tunnel') {
           failed = TD.player.sliding !== true;
+        } else if (o.type === 'collapse') {
+          failed = o.blockedLanes.includes(p.targetLane);
         } else {
           // hole and root require jumping
           failed = p.jumpT < JUMP_CLEAR_THRESHOLD;
@@ -96,9 +128,10 @@
     // so obstacles behind it become immediately visible.
     const maxT = obs.type === 'tunnel' ? PLAYER_T + 0.05 : 1.15;
     if (obs.t > maxT) return;
-    if (obs.type === 'hole')        drawHole(ctx, obs);
-    else if (obs.type === 'tunnel') drawTunnel(ctx, obs);
-    else                            drawRoot(ctx, obs);
+    if (obs.type === 'hole')            drawHole(ctx, obs);
+    else if (obs.type === 'tunnel')     drawTunnel(ctx, obs);
+    else if (obs.type === 'collapse')   drawCollapse(ctx, obs);
+    else                                drawRoot(ctx, obs);
   };
 
   // ---- Hole ----
@@ -396,6 +429,178 @@
       ctx.beginPath(); ctx.arc(fcx - cr2 * 0.3 * side, fcy - cr2 * 0.3, cr2 * 0.72, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = 'rgba(0,0,0,0.18)';
       ctx.beginPath(); ctx.arc(fcx + cr2 * 0.25, fcy + cr2 * 0.1, cr2 * 0.65, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // ---- Collapse (lane crumbles — must dodge to safe lane) ----
+  function drawCollapse(ctx, obs) {
+    const t = obs.t;
+    const y = VP_Y + (GROUND_BOTTOM - VP_Y) * t;
+    const depth = obs.collapseDepth;
+    const tFar = Math.max(0.01, t * (1 - depth));
+    const yFar = VP_Y + (GROUND_BOTTOM - VP_Y) * tFar;
+    const now = Date.now() * 0.001;
+
+    for (const lane of obs.blockedLanes) {
+      const laneCenter = VP_X + lane * LANE_W * t;
+      const laneCenterFar = VP_X + lane * LANE_W * tFar;
+      // Full lane width — no shrink factor, fills the entire lane
+      const halfW = LANE_W * t * 0.5;
+      const halfWFar = LANE_W * tFar * 0.5;
+      const jags = obs.jagsPerLane[lane];
+      const n = jags.length - 1;
+      const gapH = y - yFar;
+
+      // Clipped abyss region
+      ctx.save();
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) {
+        const x = laneCenter - halfW + (i / n) * halfW * 2 + jags[i] * halfW * 0.2;
+        const yj = y + jags[i] * 3 * t;
+        i === 0 ? ctx.moveTo(x, yj) : ctx.lineTo(x, yj);
+      }
+      for (let i = n; i >= 0; i--) {
+        const x = laneCenterFar - halfWFar + (i / n) * halfWFar * 2 + jags[i] * halfWFar * 0.15;
+        const yj = yFar + jags[i] * 2 * tFar;
+        ctx.lineTo(x, yj);
+      }
+      ctx.closePath();
+      ctx.clip();
+
+      // Deep dark abyss with lava glow at bottom
+      const abyssG = ctx.createLinearGradient(0, yFar, 0, y);
+      abyssG.addColorStop(0, '#1a0500');
+      abyssG.addColorStop(0.3, '#0a0200');
+      abyssG.addColorStop(0.7, '#080808');
+      abyssG.addColorStop(1, '#0c0c0c');
+      ctx.fillStyle = abyssG;
+      ctx.fillRect(laneCenter - halfW, yFar, halfW * 2, gapH + 5);
+
+      // Lava pool at the bottom
+      if (t > 0.06) {
+        const lavaY = yFar + gapH * 0.55;
+        const lavaG = ctx.createLinearGradient(0, lavaY, 0, y);
+        lavaG.addColorStop(0, `rgba(200,60,10,${0.4 + 0.2 * Math.sin(now * 2.5 + lane)})`);
+        lavaG.addColorStop(0.4, `rgba(240,110,15,${0.35 + 0.15 * Math.sin(now * 3.2 + lane * 2)})`);
+        lavaG.addColorStop(1, `rgba(255,160,30,${0.25 + 0.12 * Math.sin(now * 4 + lane)})`);
+        ctx.fillStyle = lavaG;
+        ctx.fillRect(laneCenter - halfW, lavaY, halfW * 2, y - lavaY);
+      }
+
+      // Tall flames distributed across the full lane, along the entire gap length
+      if (t > 0.04) {
+        const flames = obs.flameSeeds[lane];
+        const cols = 3;
+        const rows = flames.length;
+        for (let f = 0; f < rows; f++) {
+          const seed = flames[f];
+          const rowFrac = f / rows;
+          const sliceT = tFar + (t - tFar) * rowFrac;
+          const sliceY = yFar + gapH * rowFrac;
+          const sliceCenter = laneCenterFar + (laneCenter - laneCenterFar) * rowFrac;
+          const sliceHalfW = halfWFar + (halfW - halfWFar) * rowFrac;
+
+          for (let c = 0; c < cols; c++) {
+            const xFrac = -0.7 + c * 0.7;
+            const baseX = sliceCenter + xFrac * sliceHalfW;
+            const baseY = sliceY;
+
+            const flameH = (25 + 70 * sliceT) * (0.55 + 0.45 * Math.sin(now * seed.speed + seed.phase + c * 2.1));
+            const flameW = sliceHalfW * (0.45 + 0.15 * Math.sin(now * seed.speed * 1.4 + seed.phase + c));
+            const flicker = Math.sin(now * seed.speed * 1.2 + seed.phase + c * 1.7);
+
+            ctx.beginPath();
+            ctx.moveTo(baseX - flameW, baseY);
+            ctx.quadraticCurveTo(
+              baseX - flameW * 0.5, baseY - flameH * 0.55,
+              baseX + flicker * flameW * 0.25, baseY - flameH
+            );
+            ctx.quadraticCurveTo(
+              baseX + flameW * 0.5, baseY - flameH * 0.55,
+              baseX + flameW, baseY
+            );
+            ctx.closePath();
+
+            const flameG = ctx.createLinearGradient(0, baseY, 0, baseY - flameH);
+            const alphaBase = Math.min(1, 0.55 + 0.35 * sliceT);
+            flameG.addColorStop(0, `rgba(255,220,60,${alphaBase})`);
+            flameG.addColorStop(0.3, `rgba(255,140,25,${alphaBase * 0.9})`);
+            flameG.addColorStop(0.6, `rgba(220,50,10,${alphaBase * 0.6})`);
+            flameG.addColorStop(1, 'rgba(80,10,5,0)');
+            ctx.fillStyle = flameG;
+            ctx.fill();
+          }
+        }
+
+        // Ambient heat glow
+        const heatAlpha = 0.12 + 0.08 * Math.sin(now * 2.8 + lane * 1.5);
+        const heatG = ctx.createLinearGradient(0, yFar + gapH * 0.4, 0, yFar);
+        heatG.addColorStop(0, `rgba(255,120,30,${heatAlpha})`);
+        heatG.addColorStop(1, 'rgba(255,60,10,0)');
+        ctx.fillStyle = heatG;
+        ctx.fillRect(laneCenter - halfW, yFar, halfW * 2, gapH * 0.6);
+      }
+
+      ctx.restore();
+
+      // Near broken edge cross-section
+      const thickness = Math.max(2, 6 * t);
+      const er = Math.floor(88 + t * 32);
+      const eg = Math.floor(70 + t * 25);
+      const eb = Math.floor(36 + t * 14);
+      ctx.fillStyle = `rgb(${er},${eg},${eb})`;
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) {
+        const x = laneCenter - halfW + (i / n) * halfW * 2 + jags[i] * halfW * 0.2;
+        const yj = y + jags[i] * 3 * t;
+        i === 0 ? ctx.moveTo(x, yj) : ctx.lineTo(x, yj);
+      }
+      for (let i = n; i >= 0; i--) {
+        const x = laneCenter - halfW + (i / n) * halfW * 2 + jags[i] * halfW * 0.2;
+        const yj = y + jags[i] * 3 * t + thickness;
+        ctx.lineTo(x, yj);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      // Bright edge highlight (near)
+      ctx.strokeStyle = `rgba(255,200,80,${0.5 + t * 0.35})`;
+      ctx.lineWidth = Math.max(1.5, 3.5 * t);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) {
+        const x = laneCenter - halfW + (i / n) * halfW * 2 + jags[i] * halfW * 0.2;
+        const yj = y + jags[i] * 3 * t;
+        i === 0 ? ctx.moveTo(x, yj) : ctx.lineTo(x, yj);
+      }
+      ctx.stroke();
+
+      // Far edge highlight
+      ctx.strokeStyle = `rgba(180,100,30,${0.3 + t * 0.2})`;
+      ctx.lineWidth = Math.max(1, 2 * t);
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) {
+        const x = laneCenterFar - halfWFar + (i / n) * halfWFar * 2 + jags[i] * halfWFar * 0.15;
+        const yj = yFar + jags[i] * 2 * tFar;
+        i === 0 ? ctx.moveTo(x, yj) : ctx.lineTo(x, yj);
+      }
+      ctx.stroke();
+
+      // Embers/sparks floating up (unclipped, above the gap)
+      if (t > 0.10) {
+        for (let e = 0; e < 6; e++) {
+          const seed = obs.flameSeeds[lane][e % obs.flameSeeds[lane].length];
+          const ex = laneCenter + (seed.xOff * 0.8 + (e - 3) * 0.12) * halfW;
+          const sparkT = (now * seed.speed * 0.4 + seed.phase + e * 0.8) % 1;
+          const ey = y - sparkT * 40 * t;
+          const sparkSize = Math.max(1, 3 * t * (1 - sparkT));
+          const sparkAlpha = (1 - sparkT) * (0.7 + 0.3 * t);
+          ctx.fillStyle = `rgba(255,${Math.floor(180 + 75 * sparkT)},${Math.floor(40 + 60 * sparkT)},${sparkAlpha})`;
+          ctx.beginPath();
+          ctx.arc(ex, ey, sparkSize, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
     }
   }
 
