@@ -23,7 +23,8 @@
 
     if (e.code === 'ArrowLeft'  || e.code === 'KeyA') p.targetLane = Math.max(-1, p.targetLane - 1);
     if (e.code === 'ArrowRight' || e.code === 'KeyD') p.targetLane = Math.min( 1, p.targetLane + 1);
-    if ((e.code === 'ArrowUp' || e.code === 'KeyW') && !p.jumping && !p.sliding) {
+    if ((e.code === 'ArrowUp' || e.code === 'KeyW') && !p.jumping) {
+      if (p.sliding) { p.sliding = false; p.slideFrames = 0; }
       p.jumping = true;
       p.jumpVel = JUMP_VEL;
     }
@@ -51,7 +52,8 @@
     if (Math.abs(dx) > Math.abs(dy)) {
       if (dx > 30)       p.targetLane = Math.min(1, p.targetLane + 1);
       else if (dx < -30) p.targetLane = Math.max(-1, p.targetLane - 1);
-    } else if (dy < -30 && !p.jumping && !p.sliding) {
+    } else if (dy < -30 && !p.jumping) {
+      if (p.sliding) { p.sliding = false; p.slideFrames = 0; }
       p.jumping = true;
       p.jumpVel = JUMP_VEL;
     } else if (dy > 30) {
