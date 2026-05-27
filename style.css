@@ -68,6 +68,14 @@ canvas {
   text-shadow: 0 0 10px rgba(255,215,0,0.4);
 }
 
+#overlay .outrun {
+  font-size: 17px;
+  color: #c8a84e;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 8px rgba(200, 168, 78, 0.35);
+}
+
 #overlay .high-score {
   font-size: 15px;
   color: #7a8a6a;

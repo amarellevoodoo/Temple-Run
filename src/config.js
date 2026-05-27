@@ -4,7 +4,7 @@
 
 window.TD = window.TD || {};
 
-const VERSION = 'build 40';
+const VERSION = 'build 41';
 const W = 800, H = 600;
 
 // Perspective
