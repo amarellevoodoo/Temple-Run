@@ -9,10 +9,10 @@ const W = 800, H = 600;
 
 // Perspective
 const VP_X = W / 2;
-const VP_Y = 130;
+const VP_Y = 100;
 const GROUND_BOTTOM = H + 40;
-const PLAYER_T = 0.68;
-const LANE_W = 55;
+const PLAYER_T = 0.78;
+const LANE_W = 80;
 const LANES = [-1, 0, 1];
 
 // Physics
@@ -22,17 +22,17 @@ const SPEED_INCREMENT = 0.0000025;
 // Distance (in meters, as shown in the HUD) before the speed ramp kicks in.
 // Before this threshold the runner stays at BASE_SPEED so beginners can warm up.
 const SPEED_RAMP_START_METERS = 200;
-const JUMP_VEL = 0.030;
-const GRAV = 0.0007;
+const JUMP_VEL = 0.025;
+const GRAV = 0.00055;
 const JUMP_CLEAR_THRESHOLD = 0.05;
 
 // Slide
-const SLIDE_DURATION = 150;         // total frames a slide lasts
+const SLIDE_DURATION = 120;         // total frames a slide lasts
 const SLIDE_ACTIVE_START = 3;       // frame at which the slide "hitbox" becomes low
-const SLIDE_ACTIVE_END = 147;       // frame at which the slide "hitbox" stops being low
+const SLIDE_ACTIVE_END = 117;       // frame at which the slide "hitbox" stops being low
 
 // Obstacles
-const OBS_INTERVAL = 145;
+const OBS_INTERVAL = 220;
 const OVERHEAD_CHANCE = 0.3;        // chance an obstacle is an overhead beam (slide-under)
 
 // Coins

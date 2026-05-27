@@ -75,7 +75,11 @@
   };
 
   TD.drawObstacle = function(ctx, obs) {
-    if (obs.t < 0.02 || obs.t > 1.15 || obs.smashed) return;
+    if (obs.t < 0.02 || obs.smashed) return;
+    // Tunnel disappears as soon as the player has passed through it,
+    // so obstacles behind it become immediately visible.
+    const maxT = obs.type === 'tunnel' ? PLAYER_T + 0.05 : 1.15;
+    if (obs.t > maxT) return;
     if (obs.type === 'hole')        drawHole(ctx, obs);
     else if (obs.type === 'tunnel') drawTunnel(ctx, obs);
     else                            drawRoot(ctx, obs);
@@ -379,26 +383,29 @@
     }
   }
 
-  // ---- Tunnel (massive tree trunk, low root arch — must slide) ----
+  // ---- Tunnel (tree arch — must slide) ----
   function drawTunnel(ctx, obs) {
-    const t      = obs.t;
-    const y      = VP_Y + (GROUND_BOTTOM - VP_Y) * t;
-    const hw     = pathHalfW(t);
-    const archH  = 9 + 18 * t;    // reduced arch — shorter tunnel to pass under
-    const rootW  = Math.max(2, 4 + 10 * t);
-    const trunkH = 70 + 100 * t;
+    const t   = obs.t;
+    const y   = VP_Y + (GROUND_BOTTOM - VP_Y) * t;
+    const hw  = pathHalfW(t);
+    // archH scaled for the bigger player (2.2× depthScale) so the crouched
+    // character visually fits under the opening.
+    const archH  = 14 + 42 * t;
+    const rootW  = Math.max(3, 6 + 14 * t);
+    const trunkH = 55 + 85 * t;
 
     const tr = Math.floor(40 + t * 20);
     const tg = Math.floor(25 + t * 13);
     const tb = Math.floor(8  + t * 5);
+    const rootDark = `rgb(${Math.floor(tr*0.62)},${Math.floor(tg*0.62)},${Math.floor(tb*0.62)})`;
 
-    // ---- Massive trunk (full width) ----
+    // ---- Trunk + bark ----
     ctx.fillStyle = `rgb(${tr},${tg},${tb})`;
     ctx.fillRect(VP_X - hw, y - trunkH, hw * 2, trunkH);
 
-    // Bark — vertical curved lines
+    // Bark vertical lines
     if (t > 0.12) {
-      ctx.strokeStyle = `rgba(12,6,2,0.32)`;
+      ctx.strokeStyle = 'rgba(12,6,2,0.32)';
       ctx.lineWidth = Math.max(0.5, t * 0.9);
       const lines = Math.max(3, Math.floor(hw / 7));
       for (let i = 1; i < lines; i++) {
@@ -413,7 +420,7 @@
 
     // Horizontal bark rings
     if (t > 0.2) {
-      ctx.strokeStyle = `rgba(12,6,2,0.18)`;
+      ctx.strokeStyle = 'rgba(12,6,2,0.18)';
       ctx.lineWidth = Math.max(0.5, t);
       for (let i = 1; i <= 4; i++) {
         const by = y - trunkH * (i / 5);
@@ -421,8 +428,8 @@
       }
     }
 
-    // ---- Tunnel opening (dark arch over trunk) ----
-    const innerHw   = hw - rootW;
+    // ---- Tunnel opening (dark arch) — always visible as early warning ----
+    const innerHw    = hw - rootW;
     const innerArchH = Math.max(2, archH - rootW * 0.6);
 
     ctx.fillStyle = 'rgba(3,5,8,0.96)';
@@ -442,8 +449,7 @@
     ctx.ellipse(VP_X, y - innerArchH * 0.48, innerHw * 0.45, innerArchH * 0.38, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // ---- Root arch outline ----
-    const rootDark = `rgb(${Math.floor(tr*0.62)},${Math.floor(tg*0.62)},${Math.floor(tb*0.62)})`;
+    // ---- Root arch outline — always visible ----
     ctx.strokeStyle = rootDark;
     ctx.lineWidth = rootW * 1.15;
     ctx.lineCap = 'round';
@@ -460,11 +466,11 @@
     ctx.ellipse(VP_X, y, innerHw + rootW * 0.25, archH * 0.88, 0, Math.PI * 0.78, Math.PI * 0.22, false);
     ctx.stroke();
 
-    // Lateral roots visible on ground on each side
+    // Lateral roots on ground
     if (t > 0.15) {
       ctx.strokeStyle = rootDark;
       ctx.lineWidth = Math.max(2, rootW * 0.6);
-      for (let side of [-1, 1]) {
+      for (const side of [-1, 1]) {
         ctx.beginPath();
         ctx.moveTo(VP_X + side * hw, y);
         ctx.quadraticCurveTo(
@@ -475,16 +481,15 @@
       }
     }
 
-    // ---- Foliage canopy ----
+    // ---- Canopy ----
     if (t > 0.06) {
-      const cr  = 28 + 75 * t;
+      const cr  = 20 + 48 * t;
       const fcy = y - trunkH - cr * 0.35;
       ctx.fillStyle = '#0b2006'; ctx.beginPath(); ctx.arc(VP_X, fcy, cr * 1.1, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#14300a'; ctx.beginPath(); ctx.arc(VP_X - cr * 0.42, fcy - cr * 0.18, cr * 0.78, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#1a3c0e'; ctx.beginPath(); ctx.arc(VP_X + cr * 0.35, fcy - cr * 0.12, cr * 0.72, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.arc(VP_X + cr * 0.22, fcy + cr * 0.12, cr * 0.68, 0, Math.PI * 2); ctx.fill();
     }
-
   }
 
 })();

@@ -76,7 +76,7 @@
     const t = Date.now() * 0.014;
     const bob = p.jumping ? 0 : Math.abs(Math.sin(t * 2)) * 1.5;
 
-    const depthScale = 1.1 + runnerT * 0.5;
+    const depthScale = (1.1 + runnerT * 0.5) * 2.2;
     const invincible = TD.state && TD.state.invincibleFrames > 0;
     const shimmer = invincible ? (0.55 + 0.45 * Math.sin(Date.now() * 0.02)) : 0;
 
