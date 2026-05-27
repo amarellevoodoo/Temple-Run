@@ -956,17 +956,17 @@
 
   function drawDecorationsDesert(ctx) {
     const PYRS = [
-      { side: -1, tPos: 0.07, scale: 2.0 },
-      { side:  1, tPos: 0.12, scale: 1.5 },
-      { side: -1, tPos: 0.20, scale: 1.1 },
-      { side:  1, tPos: 0.28, scale: 0.85 },
+      { side: -1, tPos: 0.04, scale: 2.2 },
+      { side:  1, tPos: 0.06, scale: 1.8 },
+      { side: -1, tPos: 0.10, scale: 1.3 },
+      { side:  1, tPos: 0.08, scale: 1.0 },
     ];
     for (const pyr of PYRS) {
       const hw  = pathHalfW(pyr.tPos);
       const y   = VP_Y + (GROUND_BOTTOM - VP_Y) * pyr.tPos;
       const s   = pyr.tPos * pyr.scale;
       const bw  = 65 + 130 * s, bh = 50 + 95 * s;
-      const px2 = VP_X + pyr.side * (hw + 35 * pyr.tPos);
+      const px2 = VP_X + pyr.side * (hw + 80 + 50 * pyr.tPos);
 
       ctx.fillStyle = `rgba(0,0,0,${0.10 + s*0.10})`;
       ctx.beginPath(); ctx.ellipse(px2, y, bw*0.52, bh*0.07, 0, 0, Math.PI*2); ctx.fill();
