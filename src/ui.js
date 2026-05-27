@@ -223,6 +223,22 @@
       });
   }
 
+  // ---- Pause / Resume buttons (mobile) ----
+  const $pauseBtn  = document.getElementById('pauseBtn');
+  const $resumeBtn = document.getElementById('resumeBtn');
+  const $pauseOverlay = document.getElementById('pauseOverlay');
+
+  if ($pauseBtn) {
+    $pauseBtn.addEventListener('click', () => {
+      if (TD.togglePause) TD.togglePause();
+    });
+  }
+  if ($resumeBtn) {
+    $resumeBtn.addEventListener('click', () => {
+      if (TD.togglePause) TD.togglePause();
+    });
+  }
+
   // ---- Pro-Bundle popup close ----
   if ($proPopupClose) {
     $proPopupClose.addEventListener('click', () => {

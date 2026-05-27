@@ -16,12 +16,25 @@ body {
   position: relative;
   width: 800px;
   height: 600px;
+  max-width: 100vw;
+  max-height: 100vh;
+  aspect-ratio: 4 / 3;
+}
+
+@supports (aspect-ratio: 4 / 3) {
+  #gameWrapper {
+    width: min(800px, 100vw, calc(100vh * 4 / 3));
+    height: auto;
+  }
 }
 
 canvas {
   display: block;
+  width: 100%;
+  height: 100%;
   border-radius: 8px;
   box-shadow: 0 0 40px rgba(0,80,30,0.4), 0 0 100px rgba(0,40,15,0.2);
+  touch-action: none;
 }
 
 /* ---- Overlay (start / game-over screen) ---- */
@@ -110,6 +123,14 @@ canvas {
   text-align: center;
   line-height: 1.9;
   letter-spacing: 1px;
+}
+
+.controls-touch { display: none; }
+.controls-keyboard { display: block; }
+
+@media (pointer: coarse) {
+  .controls-touch { display: block; }
+  .controls-keyboard { display: none; }
 }
 
 /* ---- HUD ---- */
@@ -771,4 +792,150 @@ canvas {
 .pro-popup-buy:hover {
   background: #c73652;
   transform: scale(1.04);
+}
+
+/* ---- Mobile responsive ---- */
+
+@media (max-width: 500px) {
+  #overlay h1 {
+    font-size: 26px;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+  #overlay .subtitle {
+    font-size: 12px;
+    margin-bottom: 18px;
+    letter-spacing: 2px;
+  }
+  #overlay .score-display {
+    font-size: 18px;
+  }
+  #overlay .outrun {
+    font-size: 13px;
+  }
+  #overlay .high-score {
+    font-size: 12px;
+    margin-bottom: 16px;
+  }
+  #overlay .world-best {
+    font-size: 11px;
+  }
+  #startBtn {
+    font-size: 15px;
+    padding: 10px 32px;
+  }
+  .controls-hint {
+    font-size: 10px;
+    margin-top: 14px;
+    line-height: 1.7;
+  }
+  #overlay .overlay-version-large {
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  #overlay .overlay-version {
+    font-size: 9px;
+  }
+
+  #hud {
+    padding: 6px 10px;
+  }
+  .hud-left {
+    gap: 12px;
+  }
+  .hud-label {
+    font-size: 7px;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+  .hud-value {
+    font-size: 15px;
+  }
+  .mute-btn {
+    font-size: 14px;
+  }
+  .biome-chip {
+    font-size: 10px;
+    padding: 2px 8px;
+  }
+  .version {
+    font-size: 8px;
+  }
+
+  .powerup-hud {
+    bottom: 6px;
+  }
+  .streak-bar {
+    padding: 3px 8px;
+    font-size: 9px;
+  }
+
+  .leaderboard {
+    margin-top: 14px;
+    width: 260px;
+  }
+  .leaderboard-title {
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+  .leaderboard-list {
+    max-height: 120px;
+  }
+  .leaderboard-list li {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+
+  .pro-popup-card {
+    padding: 24px 20px 20px;
+  }
+  .pro-popup-emoji {
+    font-size: 36px;
+  }
+  .pro-popup-title {
+    font-size: 18px;
+  }
+  .pro-popup-text {
+    font-size: 13px;
+  }
+  .pro-popup-buy {
+    font-size: 14px;
+    padding: 10px 30px;
+  }
+
+  .pause-card h2 {
+    font-size: 26px;
+  }
+  .pause-hint {
+    font-size: 12px;
+  }
+  #resumeBtn {
+    font-size: 13px;
+    padding: 8px 28px;
+  }
+}
+
+@media (max-height: 400px) {
+  #overlay h1 {
+    font-size: 22px;
+  }
+  #overlay .subtitle {
+    font-size: 10px;
+    margin-bottom: 10px;
+  }
+  #startBtn {
+    font-size: 14px;
+    padding: 8px 28px;
+  }
+  .leaderboard {
+    display: none;
+  }
+  .controls-hint {
+    margin-top: 8px;
+    font-size: 9px;
+  }
+  #overlay .overlay-version-large {
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
 }

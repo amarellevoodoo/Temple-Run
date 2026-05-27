@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Temple Dash</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -103,11 +103,17 @@
 
     <button id="startBtn">RUN</button>
 
-    <div class="controls-hint">
+    <div class="controls-hint controls-keyboard">
       &larr; &rarr; or A D &mdash; Switch Lanes<br>
       &uarr; or W &mdash; Jump<br>
       &darr; or S &mdash; Slide<br>
       SPACE &mdash; Pause
+    </div>
+    <div class="controls-hint controls-touch">
+      Swipe Left / Right &mdash; Switch Lanes<br>
+      Swipe Up &mdash; Jump<br>
+      Swipe Down &mdash; Slide<br>
+      Tap &#9646;&#9646; &mdash; Pause
     </div>
     <div class="overlay-version" id="overlayVersion"></div>
   </div>
