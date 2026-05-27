@@ -76,7 +76,7 @@
     const t = Date.now() * 0.014;
     const bob = p.jumping ? 0 : Math.abs(Math.sin(t * 2)) * 1.5;
 
-    const depthScale = (1.1 + runnerT * 0.5) * 2.2;
+    const depthScale = (1.1 + runnerT * 0.5) * 1.75;
     const invincible = TD.state && TD.state.invincibleFrames > 0;
     const shimmer = invincible ? (0.55 + 0.45 * Math.sin(Date.now() * 0.02)) : 0;
 
@@ -97,10 +97,9 @@
     const hipY = baseY - 12 * s - bob;
     const shoulderY = bodyTop + 4 * s;
     const headY = bodyTop - headR;
-    const runPhase = p.jumping ? 0 : t * 2;
-    const legSw = Math.sin(runPhase) * 11 * s;
-    const armSw = Math.sin(runPhase + Math.PI) * 12 * s;
-    const legLift = p.jumping ? 0 : Math.max(0, Math.sin(runPhase)) * 4 * s;
+    const runPhase = p.jumping ? 0 : t * 1.6;
+    const sinR = Math.sin(runPhase);
+    const cosR = Math.cos(runPhase);
 
     // Golden aura behind the character while invincible
     if (invincible) {
@@ -117,25 +116,62 @@
       ctx.fill();
     }
 
-    // Legs
-    ctx.strokeStyle = invincible ? '#d4b070' : '#8a7a5a';
+    // Legs — two-segment with knee bend for realistic running stride
+    const thighLen = 10 * s;
+    const shinLen = 10 * s;
+    ctx.strokeStyle = invincible ? '#d4b070' : '#6a4a2a';
     ctx.lineWidth = 3.5 * s; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(cx - 3*s, hipY); ctx.lineTo(cx - 3*s - legSw, baseY - bob - legLift); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx + 3*s, hipY); ctx.lineTo(cx + 3*s + legSw, baseY - bob); ctx.stroke();
+
+    // Left leg
+    const lThighAngle = sinR * 0.7;
+    const lKneeX = cx - 3*s + Math.sin(lThighAngle) * thighLen;
+    const lKneeY = hipY + Math.cos(lThighAngle) * thighLen;
+    const lKneeBend = p.jumping ? 0.2 : 0.3 + Math.max(0, -sinR) * 0.8;
+    const lFootX = lKneeX + Math.sin(lThighAngle - lKneeBend) * shinLen;
+    const lFootY = lKneeY + Math.cos(lThighAngle - lKneeBend) * shinLen;
+    ctx.beginPath(); ctx.moveTo(cx - 3*s, hipY); ctx.lineTo(lKneeX, lKneeY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(lKneeX, lKneeY); ctx.lineTo(lFootX, lFootY); ctx.stroke();
+
+    // Right leg
+    const rThighAngle = -sinR * 0.7;
+    const rKneeX = cx + 3*s + Math.sin(rThighAngle) * thighLen;
+    const rKneeY = hipY + Math.cos(rThighAngle) * thighLen;
+    const rKneeBend = p.jumping ? 0.2 : 0.3 + Math.max(0, sinR) * 0.8;
+    const rFootX = rKneeX + Math.sin(rThighAngle - rKneeBend) * shinLen;
+    const rFootY = rKneeY + Math.cos(rThighAngle - rKneeBend) * shinLen;
+    ctx.beginPath(); ctx.moveTo(cx + 3*s, hipY); ctx.lineTo(rKneeX, rKneeY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(rKneeX, rKneeY); ctx.lineTo(rFootX, rFootY); ctx.stroke();
 
     // Torso — tinted gold while invincible
     ctx.fillStyle = invincible ? '#8a6a2a' : '#4a4a4a';
     ctx.fillRect(cx - 6*s, shoulderY, 12*s, hipY - shoulderY);
     if (invincible) {
-      // Bright highlight stripe down the torso to make it look polished/shiny
       ctx.fillStyle = `rgba(255,243,180,${0.35 + 0.35 * shimmer})`;
       ctx.fillRect(cx - 2*s, shoulderY, 1.5*s, hipY - shoulderY);
     }
 
-    // Arms
+    // Arms — sprinter style: bent elbows pumping forward/back
+    const upperArmLen = 8 * s;
+    const forearmLen = 7 * s;
     ctx.strokeStyle = invincible ? '#a88040' : '#6a5a4a'; ctx.lineWidth = 3 * s;
-    ctx.beginPath(); ctx.moveTo(cx - 6*s, shoulderY + 3*s); ctx.lineTo(cx - 8*s + armSw, shoulderY + 16*s); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx + 6*s, shoulderY + 3*s); ctx.lineTo(cx + 8*s - armSw, shoulderY + 16*s); ctx.stroke();
+
+    // Left arm (opposite phase to left leg)
+    const lArmSwing = p.jumping ? 0 : -sinR * 0.8;
+    const lElbowX = cx - 6*s + Math.sin(lArmSwing) * upperArmLen;
+    const lElbowY = shoulderY + 3*s + Math.cos(lArmSwing) * upperArmLen;
+    const lHandX = lElbowX + Math.sin(lArmSwing + 1.5) * forearmLen;
+    const lHandY = lElbowY + Math.cos(lArmSwing + 1.5) * forearmLen;
+    ctx.beginPath(); ctx.moveTo(cx - 6*s, shoulderY + 3*s); ctx.lineTo(lElbowX, lElbowY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(lElbowX, lElbowY); ctx.lineTo(lHandX, lHandY); ctx.stroke();
+
+    // Right arm
+    const rArmSwing = p.jumping ? 0 : sinR * 0.8;
+    const rElbowX = cx + 6*s + Math.sin(rArmSwing) * upperArmLen;
+    const rElbowY = shoulderY + 3*s + Math.cos(rArmSwing) * upperArmLen;
+    const rHandX = rElbowX + Math.sin(rArmSwing + 1.5) * forearmLen;
+    const rHandY = rElbowY + Math.cos(rArmSwing + 1.5) * forearmLen;
+    ctx.beginPath(); ctx.moveTo(cx + 6*s, shoulderY + 3*s); ctx.lineTo(rElbowX, rElbowY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(rElbowX, rElbowY); ctx.lineTo(rHandX, rHandY); ctx.stroke();
 
     // Head
     ctx.fillStyle = '#c4956a';
@@ -144,10 +180,7 @@
     if (invincible) {
       drawHelmet(ctx, cx, headY, headR, s, shimmer);
     } else {
-      // Hair
-      ctx.fillStyle = '#2a1a0a';
-      ctx.beginPath(); ctx.arc(cx, headY - 1*s, headR * 1.05, Math.PI * 1.15, Math.PI * 1.85, true); ctx.fill();
-      ctx.fillRect(cx - headR * 0.9, headY - headR * 0.3, headR * 1.8, headR * 0.6);
+      drawFedora(ctx, cx, headY, headR, s);
     }
 
     ctx.restore();
@@ -188,7 +221,7 @@
     }
 
     // Legs splayed wide
-    ctx.strokeStyle = invincible ? '#d4b070' : '#8a7a5a';
+    ctx.strokeStyle = invincible ? '#d4b070' : '#6a4a2a';
     ctx.lineWidth = 3.5 * s; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(cx - 3*s, hipY); ctx.lineTo(cx - 13*s, baseY); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(cx + 3*s, hipY); ctx.lineTo(cx + 13*s, baseY); ctx.stroke();
@@ -213,14 +246,52 @@
     if (invincible) {
       drawHelmet(ctx, cx, headY, headR, s, shimmer);
     } else {
-      ctx.fillStyle = '#2a1a0a';
-      ctx.beginPath(); ctx.arc(cx, headY - s * 0.5, headR * 1.05, Math.PI * 1.15, Math.PI * 1.85, true); ctx.fill();
-      ctx.fillRect(cx - headR * 0.9, headY - headR * 0.3, headR * 1.8, headR * 0.6);
+      drawFedora(ctx, cx, headY, headR, s);
     }
 
     if (invincible && Math.random() < 0.35 && TD.spawnParticles) {
       TD.spawnParticles(cx + (Math.random() - 0.5) * 30 * s, headY + (Math.random() - 0.5) * 20 * s, '#fff3c0', 1);
     }
+  }
+
+  // Indiana Jones-style fedora — seen from behind
+  function drawFedora(ctx, cx, headY, headR, s) {
+    ctx.save();
+
+    // Brim — wide ellipse
+    ctx.fillStyle = '#5a3a1a';
+    ctx.beginPath();
+    ctx.ellipse(cx, headY - headR * 0.55, headR * 1.7, headR * 0.45, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Crown — rounded dome
+    const crownGrad = ctx.createLinearGradient(cx, headY - headR * 2, cx, headY - headR * 0.5);
+    crownGrad.addColorStop(0, '#7a5a2a');
+    crownGrad.addColorStop(0.5, '#6a4a20');
+    crownGrad.addColorStop(1, '#5a3a1a');
+    ctx.fillStyle = crownGrad;
+    ctx.beginPath();
+    ctx.ellipse(cx, headY - headR * 0.8, headR * 1.05, headR * 1.1, 0, Math.PI, 0, false);
+    ctx.closePath();
+    ctx.fill();
+
+    // Crown dent
+    ctx.fillStyle = '#4a2a10';
+    ctx.beginPath();
+    ctx.ellipse(cx, headY - headR * 1.6, headR * 0.45, headR * 0.18, 0, 0, Math.PI);
+    ctx.fill();
+
+    // Hatband
+    ctx.fillStyle = '#3a2510';
+    ctx.fillRect(cx - headR * 1.05, headY - headR * 0.85, headR * 2.1, headR * 0.25);
+
+    // Highlight
+    ctx.fillStyle = 'rgba(255,240,200,0.15)';
+    ctx.beginPath();
+    ctx.ellipse(cx - headR * 0.3, headY - headR * 1.2, headR * 0.4, headR * 0.2, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
   }
 
   // Golden explorer helmet — drawn from behind, sitting on top of the head.

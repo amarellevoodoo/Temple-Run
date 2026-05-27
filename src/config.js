@@ -4,7 +4,7 @@
 
 window.TD = window.TD || {};
 
-const VERSION = 'build 39';
+const VERSION = 'build 40';
 const W = 800, H = 600;
 
 // Perspective
@@ -28,14 +28,14 @@ const SPEED_RAMP_START_METERS = 200;
 //   "clear" window  = frames where jumpT > JUMP_CLEAR_THRESHOLD   (~49 frames)
 //   collision dwell = (2 * OBS_COLLISION_HALF_T) / current_speed  (~32 frames at BASE_SPEED)
 // Margin ≈ 17 frames at BASE_SPEED — forgiving but still requires real timing.
-const JUMP_VEL = 0.030;
-const GRAV = 0.0012;
-const JUMP_CLEAR_THRESHOLD = 0.030;
+const JUMP_VEL = 0.032;
+const GRAV = 0.00085;
+const JUMP_CLEAR_THRESHOLD = 0.025;
 
 // Slide
-const SLIDE_DURATION = 150;         // total frames a slide lasts
+const SLIDE_DURATION = 108;         // total frames a slide lasts (~1.8s at 60fps)
 const SLIDE_ACTIVE_START = 3;       // frame at which the slide "hitbox" becomes low
-const SLIDE_ACTIVE_END = 147;       // frame at which the slide "hitbox" stops being low
+const SLIDE_ACTIVE_END = 105;       // frame at which the slide "hitbox" stops being low
 
 // Obstacles
 const OBS_INTERVAL = 145;
