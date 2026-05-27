@@ -4,7 +4,7 @@
 
 window.TD = window.TD || {};
 
-const VERSION = 'build 14';
+const VERSION = 'build 15';
 const W = 800, H = 600;
 
 // Perspective
@@ -24,12 +24,14 @@ const SPEED_INCREMENT = 0.0000025;
 const SPEED_RAMP_START_METERS = 200;
 // Jump tuning — these are paired with BASE_SPEED so the obstacle's collision
 // dwell time fits comfortably inside the "clear" window of the jump arc.
-//   jump duration   ≈ 2 * JUMP_VEL / GRAV                         (~50 frames)
-//   "clear" window  = frames where jumpT > JUMP_CLEAR_THRESHOLD   (~49 frames)
+//   jump duration   ≈ 2 * JUMP_VEL / GRAV                         (~61 frames)
+//   "clear" window  = frames where jumpT > JUMP_CLEAR_THRESHOLD   (~60 frames)
 //   collision dwell = (2 * OBS_COLLISION_HALF_T) / current_speed  (~32 frames at BASE_SPEED)
-// Margin ≈ 17 frames at BASE_SPEED — forgiving but still requires real timing.
+// Margin ≈ 28 frames at BASE_SPEED — generous, so jumps feel forgiving even
+// when timed a bit early or late. GRAV was lowered (0.0012 → 0.001) to widen
+// this window without making the peak height much taller.
 const JUMP_VEL = 0.030;
-const GRAV = 0.0012;
+const GRAV = 0.001;
 const JUMP_CLEAR_THRESHOLD = 0.030;
 
 // Slide
