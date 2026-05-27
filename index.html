@@ -29,11 +29,59 @@
     <div class="hud-right">
       <div class="biome-chip" id="biomeChip">Jungle Temple</div>
       <div class="mute-btn" id="muteBtn">🔊</div>
+      <button id="pauseBtn" class="pause-btn" type="button" aria-label="Pause">
+        <span class="pause-icon" aria-hidden="true">
+          <span class="bar"></span><span class="bar"></span>
+        </span>
+        <span class="play-icon" aria-hidden="true"></span>
+      </button>
     </div>
     <div class="version" id="versionDisplay"></div>
+
+    <div class="powerup-hud" id="powerupHud">
+      <div class="streak-bar" id="streakBar">
+        <div class="streak-label">
+          <span class="streak-icon" aria-hidden="true">●</span>
+          <span id="streakLabel">0 / 5</span>
+        </div>
+        <div class="streak-track">
+          <div class="streak-fill" id="streakFill"></div>
+        </div>
+      </div>
+
+      <div class="invincible-timer" id="invincibleTimer" style="display:none;">
+        <span class="invincible-icon" aria-hidden="true">★</span>
+        <span class="invincible-text">INVINCIBLE</span>
+        <span class="invincible-count" id="invincibleCount">5</span><span class="invincible-suffix">s</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="pauseOverlay" class="pause-overlay">
+    <div class="pause-card">
+      <h2>PAUSED</h2>
+      <div class="pause-hint">Press SPACE or tap below to resume</div>
+      <button id="resumeBtn" type="button">RESUME</button>
+    </div>
   </div>
 
   <div id="biomeBanner" class="biome-banner"></div>
+
+  <div id="tutorialHud" class="tutorial-hud hidden" aria-live="polite">
+    <div class="tutorial-card">
+      <div class="tutorial-text" id="tutorialText">Get Ready...</div>
+      <div class="tutorial-keypad">
+        <div class="keypad-row keypad-row-top">
+          <kbd class="tut-key" data-key="up">&uarr;</kbd>
+        </div>
+        <div class="keypad-row keypad-row-bottom">
+          <kbd class="tut-key" data-key="left">&larr;</kbd>
+          <kbd class="tut-key" data-key="down">&darr;</kbd>
+          <kbd class="tut-key" data-key="right">&rarr;</kbd>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="overlay">
     <h1>TEMPLE DASH</h1>
@@ -55,7 +103,9 @@
 
     <div class="controls-hint">
       &larr; &rarr; or A D &mdash; Switch Lanes<br>
-      &uarr; or W or SPACE &mdash; Jump
+      &uarr; or W &mdash; Jump<br>
+      &darr; or S &mdash; Slide<br>
+      SPACE &mdash; Pause
     </div>
     <div class="overlay-version" id="overlayVersion"></div>
   </div>
@@ -79,6 +129,7 @@
 <script src="src/intro.js"></script>
 <script src="src/leaderboard.js"></script>
 <script src="src/ui.js"></script>
+<script src="src/tutorial.js"></script>
 <script src="src/game.js"></script>
 
 </body>

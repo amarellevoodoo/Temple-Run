@@ -11,6 +11,11 @@
   const $coinDisplay    = document.getElementById('coinDisplay');
   const $biomeChip      = document.getElementById('biomeChip');
   const $biomeBanner    = document.getElementById('biomeBanner');
+  const $streakBar      = document.getElementById('streakBar');
+  const $streakFill     = document.getElementById('streakFill');
+  const $streakLabel    = document.getElementById('streakLabel');
+  const $invincibleTimer= document.getElementById('invincibleTimer');
+  const $invincibleCount= document.getElementById('invincibleCount');
   const $finalScore     = document.getElementById('finalScore');
   const $highScore      = document.getElementById('highScore');
   const $worldBest      = document.getElementById('worldBest');
@@ -42,6 +47,9 @@
   };
 
   // ---- HUD ----
+  let _lastStreak = 0;
+  let _missClearTimer = null;
+
   TD.updateHUD = function() {
     $scoreDisplay.textContent = TD.state.score.toLocaleString();
     $distDisplay.textContent  = Math.floor(TD.state.distance * 100).toLocaleString();
@@ -49,6 +57,35 @@
     const biome = TD.biomes && TD.biomes[TD.state.activeBiomeIndex || 0];
     if (biome) $biomeChip.textContent = biome.name;
     if ($versionDisplay) $versionDisplay.textContent = TD.VERSION;
+
+    // ---- Power-up HUD: coin streak bar / invincibility countdown ----
+    if ($streakBar && $invincibleTimer) {
+      const goal      = TD.COIN_STREAK_GOAL || 10;
+      const streak    = TD.state.coinStreak || 0;
+      const invFrames = TD.state.invincibleFrames || 0;
+
+      if (invFrames > 0) {
+        // Active power-up: show the countdown badge, hide the streak bar
+        $streakBar.style.display = 'none';
+        $invincibleTimer.style.display = 'flex';
+        $invincibleCount.textContent = Math.ceil(invFrames / 60);
+      } else {
+        $invincibleTimer.style.display = 'none';
+        $streakBar.style.display = 'flex';
+
+        const pct = Math.min(100, (streak / goal) * 100);
+        $streakFill.style.width = pct + '%';
+        $streakLabel.textContent = streak + ' / ' + goal;
+
+        // Flash + shake the bar briefly whenever the streak drops (missed coin)
+        if (streak < _lastStreak) {
+          $streakBar.classList.add('miss');
+          clearTimeout(_missClearTimer);
+          _missClearTimer = setTimeout(() => $streakBar.classList.remove('miss'), 450);
+        }
+      }
+      _lastStreak = streak;
+    }
   };
 
   // ---- Biome banner ----
@@ -118,6 +155,7 @@
       if (TD.biomes && TD.showBiomeBanner) {
         TD.showBiomeBanner(TD.biomes[0].name);
       }
+      if (TD.tutorialStart) TD.tutorialStart();
     });
   });
 

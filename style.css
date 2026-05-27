@@ -170,6 +170,251 @@ canvas {
   transform: scale(1.15);
 }
 
+/* Pause button — opt back in to clicks since the HUD disables them. */
+.pause-btn {
+  pointer-events: auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(200,168,78,0.5);
+  background: rgba(10,20,10,0.65);
+  color: #e0d8b0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.pause-btn:hover {
+  transform: scale(1.06);
+  background: rgba(20,35,20,0.85);
+  box-shadow: 0 0 14px rgba(200,168,78,0.35);
+}
+
+.pause-btn:active {
+  transform: scale(0.96);
+}
+
+.pause-btn .pause-icon {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+}
+
+.pause-btn .pause-icon .bar {
+  width: 4px;
+  height: 14px;
+  background: #e0d8b0;
+  border-radius: 1px;
+}
+
+.pause-btn .play-icon {
+  display: none;
+  width: 0;
+  height: 0;
+  border-left: 12px solid #e0d8b0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  margin-left: 3px;
+}
+
+.pause-btn.is-paused .pause-icon { display: none; }
+.pause-btn.is-paused .play-icon  { display: block; }
+
+/* Pause overlay */
+.pause-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5,15,5,0.7);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9;
+  transition: opacity 0.18s ease;
+}
+
+.pause-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.pause-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 45px;
+  background: rgba(10,20,10,0.85);
+  border: 1px solid rgba(200,168,78,0.45);
+  border-radius: 14px;
+  box-shadow: 0 0 40px rgba(0,80,30,0.35);
+}
+
+.pause-card h2 {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 38px;
+  color: #c8a84e;
+  letter-spacing: 6px;
+  text-shadow: 0 0 18px rgba(200,168,78,0.45), 0 3px 6px rgba(0,0,0,0.7);
+  margin-bottom: 10px;
+}
+
+.pause-hint {
+  font-size: 12px;
+  color: #8a9a6a;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 22px;
+}
+
+#resumeBtn {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 16px;
+  padding: 10px 36px;
+  background: linear-gradient(135deg, #5a8a3a, #3a6a2a);
+  color: #e0d8b0;
+  border: 2px solid #8ab060;
+  border-radius: 50px;
+  cursor: pointer;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  box-shadow: 0 0 20px rgba(80,140,50,0.3);
+  transition: all 0.2s;
+  letter-spacing: 2px;
+}
+
+#resumeBtn:hover {
+  transform: scale(1.05);
+  background: linear-gradient(135deg, #6a9a4a, #4a7a3a);
+  box-shadow: 0 0 30px rgba(80,140,50,0.5);
+}
+
+/* ---- Power-up HUD (coin streak bar + invincibility timer) ---- */
+
+.powerup-hud {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.streak-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: transform 0.2s ease;
+}
+
+.streak-bar.miss {
+  animation: streakMiss 0.45s ease-in-out;
+}
+
+.streak-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 11px;
+  color: #f0c860;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.85);
+}
+
+.streak-label .streak-icon {
+  font-size: 13px;
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255,215,0,0.6);
+}
+
+.streak-track {
+  width: 220px;
+  height: 10px;
+  background: rgba(10,20,10,0.7);
+  border: 1px solid rgba(200,168,78,0.5);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.55), inset 0 1px 2px rgba(0,0,0,0.6);
+}
+
+.streak-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #c8a84e, #f0c860 45%, #fff3c0);
+  box-shadow: 0 0 10px rgba(255,215,0,0.55);
+  transition: width 0.25s ease, background 0.25s ease;
+}
+
+.streak-bar.miss .streak-fill {
+  background: linear-gradient(90deg, #8a2a1a, #c84a3a);
+  transition: none;
+}
+
+@keyframes streakMiss {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(5px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(2px); }
+}
+
+.invincible-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 18px;
+  background: linear-gradient(135deg, rgba(60,40,5,0.85), rgba(35,22,2,0.85));
+  border: 1.5px solid #ffd700;
+  border-radius: 22px;
+  font-family: 'Cinzel Decorative', serif;
+  color: #ffe9a0;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  box-shadow: 0 0 18px rgba(255,215,0,0.5), inset 0 0 8px rgba(255,243,180,0.15);
+  animation: invinciblePulse 0.9s ease-in-out infinite;
+}
+
+.invincible-timer .invincible-icon {
+  font-size: 18px;
+  color: #fff3c0;
+  text-shadow: 0 0 10px #ffd700;
+}
+
+.invincible-timer .invincible-text {
+  font-size: 12px;
+  color: #ffd700;
+}
+
+.invincible-timer .invincible-count {
+  font-size: 20px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 0 12px #ffd700, 0 1px 3px rgba(0,0,0,0.85);
+  min-width: 18px;
+  text-align: right;
+}
+
+.invincible-timer .invincible-suffix {
+  font-size: 12px;
+  color: #ffe9a0;
+}
+
+@keyframes invinciblePulse {
+  0%, 100% { box-shadow: 0 0 18px rgba(255,215,0,0.5), inset 0 0 8px rgba(255,243,180,0.15); }
+  50%      { box-shadow: 0 0 32px rgba(255,215,0,0.9), inset 0 0 14px rgba(255,243,180,0.30); }
+}
+
 .biome-chip {
   font-family: 'Cinzel Decorative', serif;
   font-size: 13px;
@@ -213,6 +458,122 @@ canvas {
   15%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   80%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
+}
+
+/* ---- Tutorial hint card (first ~10s of a run) ----
+   A minimal frosted-glass arrow-pad in the bottom-right corner. The path's
+   right edge never extends past x≈537 of the 800-wide canvas, so this card
+   (anchored at right:18px) sits entirely outside the runway and never
+   blocks the character or any approaching obstacle. */
+
+.tutorial-hud {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 7;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.tutorial-hud.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tutorial-hud.hidden {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.tutorial-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px 12px;
+  background: rgba(10,20,10,0.32);
+  border: 1px solid rgba(200,168,78,0.45);
+  border-radius: 12px;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.45), 0 0 16px rgba(200,168,78,0.2);
+}
+
+.tutorial-text {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #ffe9a0;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.55);
+  white-space: nowrap;
+  min-height: 14px;
+}
+
+.tutorial-keypad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.keypad-row {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.tut-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(180deg, rgba(55,55,55,0.85), rgba(22,22,22,0.85));
+  border: 1.5px solid rgba(150,150,150,0.55);
+  border-radius: 7px;
+  color: #b8b8a8;
+  font-family: 'MedievalSharp', cursive;
+  font-size: 19px;
+  font-weight: bold;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.85);
+  box-shadow: 0 3px 5px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease,
+              box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.tut-key.active {
+  background: linear-gradient(180deg, #fff3c0, #f0c860 55%, #c8a84e);
+  border-color: #fff3c0;
+  color: #2a1a05;
+  text-shadow: 0 1px 1px rgba(255,243,180,0.5);
+  box-shadow:
+    0 0 22px rgba(255,215,0,0.85),
+    0 0 6px rgba(255,243,180,0.7),
+    0 3px 8px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.45);
+  animation: tutKeyPulse 0.65s ease-in-out infinite;
+}
+
+@keyframes tutKeyPulse {
+  0%, 100% {
+    transform: translateY(-2px) scale(1);
+    box-shadow:
+      0 0 22px rgba(255,215,0,0.85),
+      0 0 6px rgba(255,243,180,0.7),
+      0 3px 8px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.45);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.08);
+    box-shadow:
+      0 0 30px rgba(255,215,0,1),
+      0 0 10px rgba(255,243,180,0.9),
+      0 5px 12px rgba(0,0,0,0.5),
+      inset 0 1px 0 rgba(255,255,255,0.55);
+  }
 }
 
 /* ---- Leaderboard (overlay) ---- */
