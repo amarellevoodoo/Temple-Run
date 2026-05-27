@@ -114,7 +114,7 @@
     ctx.fillStyle = '#2a1a0a';
     ctx.textAlign = 'center';
     ctx.fillText('BeReal', 7 * S, -3 * S);
-    ctx.fillText('Secret Plans', 7 * S, 5 * S);
+    ctx.fillText('DAUs', 7 * S, 5 * S);
     ctx.restore();
 
     // Head
