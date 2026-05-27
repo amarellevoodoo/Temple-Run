@@ -41,7 +41,7 @@
       <div class="streak-bar" id="streakBar">
         <div class="streak-label">
           <span class="streak-icon" aria-hidden="true">●</span>
-          <span id="streakLabel">0 / 10</span>
+          <span id="streakLabel">0 / 5</span>
         </div>
         <div class="streak-track">
           <div class="streak-fill" id="streakFill"></div>
@@ -65,6 +65,22 @@
   </div>
 
   <div id="biomeBanner" class="biome-banner"></div>
+
+  <div id="tutorialHud" class="tutorial-hud hidden" aria-live="polite">
+    <div class="tutorial-card">
+      <div class="tutorial-text" id="tutorialText">Get Ready...</div>
+      <div class="tutorial-keypad">
+        <div class="keypad-row keypad-row-top">
+          <kbd class="tut-key" data-key="up">&uarr;</kbd>
+        </div>
+        <div class="keypad-row keypad-row-bottom">
+          <kbd class="tut-key" data-key="left">&larr;</kbd>
+          <kbd class="tut-key" data-key="down">&darr;</kbd>
+          <kbd class="tut-key" data-key="right">&rarr;</kbd>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="overlay">
     <h1>TEMPLE DASH</h1>
@@ -110,6 +126,7 @@
 <script src="src/intro.js"></script>
 <script src="src/leaderboard.js"></script>
 <script src="src/ui.js"></script>
+<script src="src/tutorial.js"></script>
 <script src="src/game.js"></script>
 
 </body>

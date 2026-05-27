@@ -154,6 +154,7 @@
       if (TD.biomes && TD.showBiomeBanner) {
         TD.showBiomeBanner(TD.biomes[0].name);
       }
+      if (TD.tutorialStart) TD.tutorialStart();
     });
   });
 
