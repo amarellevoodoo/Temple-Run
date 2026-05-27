@@ -57,7 +57,7 @@
 
       // Show Pro-Bundle popup: score < 1000, at least 2nd play.
       // After first appearance, only re-show after 3+ more games.
-      const canShow = TD.state.score < 1000 && _sessionPlays >= 2
+      const canShow = TD.state.score < 3000 && _sessionPlays >= 2
         && (!_popupShownOnce || _playsSinceLastPopup >= 3);
       if (canShow) {
         _popupShownOnce = true;
