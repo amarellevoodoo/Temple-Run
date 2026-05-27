@@ -4,7 +4,7 @@
 
 window.TD = window.TD || {};
 
-const VERSION = 'build 41';
+const VERSION = 'build 48';
 const W = 800, H = 600;
 
 // Perspective
@@ -12,7 +12,7 @@ const VP_X = W / 2;
 const VP_Y = 130;
 const GROUND_BOTTOM = H + 40;
 const PLAYER_T = 0.68;
-const LANE_W = 55;
+const LANE_W = 75;
 const LANES = [-1, 0, 1];
 
 // Physics
