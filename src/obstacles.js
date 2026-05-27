@@ -49,10 +49,10 @@
     const invincible = TD.state.invincibleFrames > 0;
     for (let o of TD.obstacles) {
       if (o.hit || o.smashed) continue;
-      if (Math.abs(o.t - PLAYER_T) < 0.045) {
+      const hitWindow = o.type === 'tunnel' ? 0.025 : 0.045;
+      if (Math.abs(o.t - PLAYER_T) < hitWindow) {
         let failed = false;
         if (o.type === 'tunnel') {
-          // Must be sliding — TD.player.sliding is set by Person 1 (input.js + player.js)
           failed = TD.player.sliding !== true;
         } else {
           // hole and root require jumping
@@ -384,9 +384,9 @@
     const t      = obs.t;
     const y      = VP_Y + (GROUND_BOTTOM - VP_Y) * t;
     const hw     = pathHalfW(t);
-    const archH  = 14 + 30 * t;   // low arch forces sliding
-    const rootW  = Math.max(3, 5 + 14 * t);
-    const trunkH = 90 + 130 * t;
+    const archH  = 9 + 18 * t;    // reduced arch — shorter tunnel to pass under
+    const rootW  = Math.max(2, 4 + 10 * t);
+    const trunkH = 70 + 100 * t;
 
     const tr = Math.floor(40 + t * 20);
     const tg = Math.floor(25 + t * 13);

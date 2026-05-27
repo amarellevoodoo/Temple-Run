@@ -3,7 +3,7 @@
 // ============================================
 
 (function() {
-  const { GRAV, PLAYER_T, laneToScreen } = TD;
+  const { GRAV, PLAYER_T, SLIDE_DURATION, laneToScreen } = TD;
 
   TD.player = {
     targetLane: 0,
@@ -11,6 +11,8 @@
     jumping: false,
     jumpT: 0,
     jumpVel: 0,
+    sliding: false,
+    slideFrames: 0,
   };
 
   TD.playerReset = function() {
@@ -20,6 +22,15 @@
     p.jumping = false;
     p.jumpT = 0;
     p.jumpVel = 0;
+    p.sliding = false;
+    p.slideFrames = 0;
+  };
+
+  TD.playerStartSlide = function() {
+    const p = TD.player;
+    if (p.sliding || p.jumping) return;
+    p.sliding    = true;
+    p.slideFrames = SLIDE_DURATION;
   };
 
   TD.playerUpdate = function() {
@@ -38,20 +49,29 @@
         p.jumpVel = 0;
       }
     }
+
+    // Slide countdown
+    if (p.slideFrames > 0) {
+      p.slideFrames--;
+      if (p.slideFrames <= 0) {
+        p.sliding    = false;
+        p.slideFrames = 0;
+      }
+    }
   };
 
   // Returns the effective T (depth) of the player accounting for forward jump
   TD.playerEffectiveT = function() {
-    return PLAYER_T - TD.player.jumpT * 4.5 * 0.18;
+    return PLAYER_T - TD.player.jumpT * 2.7 * 0.18;
   };
 
   TD.drawRunner = function(ctx) {
     const p = TD.player;
-    const jumpForward = p.jumpT * 4.5;
+    const jumpForward = p.jumpT * 2.7;
     const runnerT = PLAYER_T - jumpForward * 0.18;
     const ps = laneToScreen(p.lane, runnerT);
     const cx = ps.x, footY = ps.y;
-    const jumpPx = p.jumpT * 400;
+    const jumpPx = p.jumpT * 240;
     const baseY = footY - jumpPx;
     const t = Date.now() * 0.014;
     const bob = p.jumping ? 0 : Math.abs(Math.sin(t * 2)) * 1.5;
@@ -62,8 +82,16 @@
 
     ctx.save();
 
-    // Character — seen from behind (shadow drawn in game.js z-sort pass)
     const s = depthScale;
+
+    // ---- Slide pose ----
+    if (p.sliding || p.slideFrames > 0) {
+      drawRunnerSlide(ctx, p, cx, baseY, s, invincible, shimmer);
+      ctx.restore();
+      return;
+    }
+
+    // Character — seen from behind (shadow drawn in game.js z-sort pass)
     const headR = 5 * s;
     const bodyTop = baseY - 30 * s - bob;
     const hipY = baseY - 12 * s - bob;
@@ -131,6 +159,69 @@
       TD.spawnParticles(sx, sy, '#fff3c0', 1);
     }
   };
+
+  // Crouched slide pose — character squishes low, arms wide for balance.
+  function drawRunnerSlide(ctx, p, cx, baseY, s, invincible, shimmer) {
+    const elapsed = SLIDE_DURATION - p.slideFrames;
+    const easeIn  = Math.min(1, elapsed / 4);
+    const easeOut = p.slideFrames <= 4 ? p.slideFrames / 4 : 1;
+    const squat   = easeIn * easeOut;       // 0→1 crouching in, 1→0 standing back up
+    const sq      = 1 - squat * 0.68;      // height factor: 1.0=upright → 0.32=fully crouched
+
+    const bodyH    = 30 * s * sq;
+    const bodyTop  = baseY - bodyH;
+    const hipY     = baseY - bodyH * 0.42;
+    const shoulderY = bodyTop + 2 * s;
+    const headR    = 4.5 * s;
+    const headY    = bodyTop - headR * 0.6;
+
+    // Invincible aura (scaled down for crouch)
+    if (invincible) {
+      const auraR = 28 * s;
+      const auraY = (bodyTop + hipY) / 2;
+      const grad  = ctx.createRadialGradient(cx, auraY, 2, cx, auraY, auraR);
+      grad.addColorStop(0,    `rgba(255,243,150,${0.45 * shimmer + 0.25})`);
+      grad.addColorStop(0.55, `rgba(255,200,60,${0.25 * shimmer + 0.10})`);
+      grad.addColorStop(1,    'rgba(255,180,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(cx, auraY, auraR, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Legs splayed wide
+    ctx.strokeStyle = invincible ? '#d4b070' : '#8a7a5a';
+    ctx.lineWidth = 3.5 * s; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(cx - 3*s, hipY); ctx.lineTo(cx - 13*s, baseY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + 3*s, hipY); ctx.lineTo(cx + 13*s, baseY); ctx.stroke();
+
+    // Torso (wider, lower)
+    ctx.fillStyle = invincible ? '#8a6a2a' : '#4a4a4a';
+    ctx.fillRect(cx - 7*s, shoulderY, 14*s, hipY - shoulderY);
+    if (invincible) {
+      ctx.fillStyle = `rgba(255,243,180,${0.35 + 0.35 * shimmer})`;
+      ctx.fillRect(cx - 2*s, shoulderY, 1.5*s, hipY - shoulderY);
+    }
+
+    // Arms wide for balance
+    ctx.strokeStyle = invincible ? '#a88040' : '#6a5a4a'; ctx.lineWidth = 3 * s;
+    ctx.beginPath(); ctx.moveTo(cx - 7*s, shoulderY + 2*s); ctx.lineTo(cx - 18*s, shoulderY + 6*s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + 7*s, shoulderY + 2*s); ctx.lineTo(cx + 18*s, shoulderY + 6*s); ctx.stroke();
+
+    // Head
+    ctx.fillStyle = '#c4956a';
+    ctx.beginPath(); ctx.arc(cx, headY, headR, 0, Math.PI * 2); ctx.fill();
+
+    if (invincible) {
+      drawHelmet(ctx, cx, headY, headR, s, shimmer);
+    } else {
+      ctx.fillStyle = '#2a1a0a';
+      ctx.beginPath(); ctx.arc(cx, headY - s * 0.5, headR * 1.05, Math.PI * 1.15, Math.PI * 1.85, true); ctx.fill();
+      ctx.fillRect(cx - headR * 0.9, headY - headR * 0.3, headR * 1.8, headR * 0.6);
+    }
+
+    if (invincible && Math.random() < 0.35 && TD.spawnParticles) {
+      TD.spawnParticles(cx + (Math.random() - 0.5) * 30 * s, headY + (Math.random() - 0.5) * 20 * s, '#fff3c0', 1);
+    }
+  }
 
   // Golden explorer helmet — drawn from behind, sitting on top of the head.
   function drawHelmet(ctx, cx, headY, headR, s, shimmer) {
