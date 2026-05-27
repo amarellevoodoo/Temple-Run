@@ -39,17 +39,11 @@
   let swX = 0, swY = 0;
 
   TD.canvas.addEventListener('touchstart', e => {
-    e.preventDefault();
     swX = e.touches[0].clientX;
     swY = e.touches[0].clientY;
-  }, { passive: false });
-
-  TD.canvas.addEventListener('touchmove', e => {
-    e.preventDefault();
-  }, { passive: false });
+  });
 
   TD.canvas.addEventListener('touchend', e => {
-    e.preventDefault();
     const s = TD.state;
     if (!s.running || s.paused) return;
     const p = TD.player;
@@ -67,5 +61,5 @@
     } else if (dy > 30) {
       TD.playerStartSlide();
     }
-  }, { passive: false });
+  });
 })();
