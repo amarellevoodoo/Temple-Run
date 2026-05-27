@@ -17,6 +17,7 @@
   const $invincibleTimer= document.getElementById('invincibleTimer');
   const $invincibleCount= document.getElementById('invincibleCount');
   const $finalScore     = document.getElementById('finalScore');
+  const $outrunPct      = document.getElementById('outrunPct');
   const $highScore      = document.getElementById('highScore');
   const $worldBest      = document.getElementById('worldBest');
   const $startBtn       = document.getElementById('startBtn');
@@ -25,6 +26,11 @@
   const $overlayVersion = document.getElementById('overlayVersion');
   const $overlayVersionLarge = document.getElementById('overlayVersionLarge');
   const $muteBtn        = document.getElementById('muteBtn');
+
+  // Whether the "You've outrun XX% of your colleagues!" line should appear
+  // once the leaderboard pool resolves. Only true between a game-over and the
+  // next RUN click, so the initial start screen never shows it.
+  let _pendingOutrun = false;
 
   // ---- Overlay ----
   TD.showOverlay = function(showScore) {
@@ -35,14 +41,19 @@
       $finalScore.style.display = 'block';
       $finalScore.textContent =
         'Score: ' + TD.state.score.toLocaleString() + '  -  Coins: ' + TD.totalCoins;
+      // Hide until the leaderboard (or fallback) tells us where the score sits.
+      if ($outrunPct) $outrunPct.style.display = 'none';
       $highScore.style.display = 'block';
       $highScore.textContent = 'Best: ' + TD.state.highScore.toLocaleString();
       $startBtn.textContent = 'RUN AGAIN';
+      _pendingOutrun = true;
       refreshLeaderboard();
     } else {
       $finalScore.style.display = 'none';
+      if ($outrunPct) $outrunPct.style.display = 'none';
       $highScore.style.display = 'none';
       $startBtn.textContent = 'RUN';
+      _pendingOutrun = false;
     }
   };
 
@@ -105,15 +116,51 @@
     $leaderboardList.innerHTML = '<li class="leaderboard-empty">' + message + '</li>';
   }
 
+  // Synthetic "colleagues" distribution used for the outrun percentile when
+  // the live leaderboard is unavailable (not configured / empty / fetch failed).
+  // Hand-tuned to feel like a believable spread of casual players: lots of
+  // beginners at the low end, a long tail of regulars, and a few veterans.
+  const FAKE_COLLEAGUES = [
+    120,  240,  380,   510,   660,   820,   990,   1180,  1400,  1640,
+    1900, 2200, 2550,  2950,  3400,  3900,  4500,  5200,  6000,  6900,
+    7900, 9000, 10300, 11800, 13500, 15400, 17600, 20100, 23000, 26500,
+  ];
+
+  function showOutrunFromScores(scores) {
+    if (!_pendingOutrun || !$outrunPct) return;
+    if (!scores || scores.length === 0) {
+      $outrunPct.style.display = 'none';
+      return;
+    }
+    const myScore = TD.state.score || 0;
+    const beaten = scores.filter(s => s < myScore).length;
+    const pct = Math.round((beaten / scores.length) * 100);
+    $outrunPct.textContent = "You've outrun " + pct + '% of your colleagues!';
+    $outrunPct.style.display = 'block';
+  }
+
   function renderEntries(entries) {
     if (!entries || entries.length === 0) {
       renderEmpty('No scores yet. Be the first!');
       $worldBest.textContent = '';
+      // No real competitors yet — fall back to the synthetic pool so the
+      // percentile line still appears after a run.
+      showOutrunFromScores(FAKE_COLLEAGUES);
       return;
     }
     const myName = TD.leaderboard.getPlayerName();
     $worldBest.textContent = 'World Best: ' + entries[0].name + ' - ' + entries[0].score.toLocaleString();
-    const items = entries.map(e => {
+
+    // Percentile against everyone except the player's own leaderboard entry
+    // (that entry stores their best-ever score, which would unfairly skew any
+    // non-record run). If the player is literally the only entry, fall back.
+    const competitors = entries.filter(e => e.name !== myName).map(e => e.score);
+    showOutrunFromScores(competitors.length > 0 ? competitors : FAKE_COLLEAGUES);
+
+    // Visible list still shows only the top 10; the rest of the fetched pool
+    // is only used for the percentile above.
+    const visible = entries.slice(0, 10);
+    const items = visible.map(e => {
       const isMine = e.name === myName;
       return '<li class="' + (isMine ? 'own' : '') + '">'
            +   '<span class="rank">#' + e.rank + '</span>'
@@ -134,12 +181,19 @@
     if (!TD.leaderboard || !TD.leaderboard.isConfigured()) {
       renderEmpty('Leaderboard offline (configure src/leaderboard.js).');
       $worldBest.textContent = '';
+      // Offline mode: still show the percentile against the synthetic pool.
+      showOutrunFromScores(FAKE_COLLEAGUES);
       return;
     }
     renderEmpty('Loading top runners...');
-    TD.leaderboard.fetchTop(10)
+    // Fetch 100 entries so the percentile reflects a meaningful pool; the
+    // visible list still shows only the top 10.
+    TD.leaderboard.fetchTop(100)
       .then(renderEntries)
-      .catch(() => renderEmpty('Could not load leaderboard.'));
+      .catch(() => {
+        renderEmpty('Could not load leaderboard.');
+        showOutrunFromScores(FAKE_COLLEAGUES);
+      });
   }
 
   // ---- Start button ----
