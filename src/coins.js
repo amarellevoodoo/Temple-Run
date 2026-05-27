@@ -16,13 +16,38 @@
     TD.totalCoins = 0;
   };
 
+  // Minimum t-space distance between any new coin and any active obstacle.
+  // At base speed (0.0025) this is ~40 frames (~0.67 s) of clearance, which
+  // gives the player time to react to one event before the other and keeps
+  // a 5-coin streak (the invincibility goal) reliably achievable.
+  const COIN_OBSTACLE_GAP_T = 0.10;
+
   TD.coinsUpdate = function(speed) {
     TD.coinTimer--;
 
     if (TD.coinTimer <= 0) {
-      const lane = LANES[Math.floor(Math.random() * 3)];
-      TD.coins.push({ lane, t: 0, collected: false });
-      TD.coinTimer = COIN_INTERVAL_MIN + Math.floor(Math.random() * COIN_INTERVAL_RANGE);
+      // Don't spawn a coin if doing so would land it dangerously close to
+      // an obstacle, either:
+      //   - just-spawned obstacle still near t=0 (it would land just BEFORE
+      //     this coin reaches the player), or
+      //   - the obstacle spawner is about to fire (the next obstacle would
+      //     land just AFTER this coin reaches the player).
+      const tooCloseBehind = TD.obstacles.some(o =>
+        !o.hit && !o.smashed && o.t > 0 && o.t < COIN_OBSTACLE_GAP_T
+      );
+      const gapFrames = COIN_OBSTACLE_GAP_T / Math.max(speed, 0.0001);
+      const tooCloseAhead = TD.obsTimer > 0 && TD.obsTimer < gapFrames;
+
+      if (tooCloseBehind || tooCloseAhead) {
+        // Try again very soon — just long enough for the conflicting
+        // obstacle to clear the spawn zone (or for us to safely land
+        // before the next one spawns).
+        TD.coinTimer = 8;
+      } else {
+        const lane = LANES[Math.floor(Math.random() * 3)];
+        TD.coins.push({ lane, t: 0, collected: false });
+        TD.coinTimer = COIN_INTERVAL_MIN + Math.floor(Math.random() * COIN_INTERVAL_RANGE);
+      }
     }
 
     for (let c of TD.coins) c.t += speed;

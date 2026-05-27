@@ -73,6 +73,8 @@
     s.running = false;
     s.screenShake = 12;
 
+    if (TD.tutorialEnd) TD.tutorialEnd();
+
     const ps = laneToScreen(TD.player.targetLane, PLAYER_T);
     TD.spawnParticles(ps.x, ps.y - 25, '#ff4400', 18);
     TD.spawnParticles(ps.x, ps.y - 25, '#ffaa00', 10);
@@ -129,6 +131,9 @@
     TD.obstaclesUpdate(s.speed);
     TD.coinsUpdate(s.speed);
     TD.treesUpdate(s.speed);
+
+    // Onboarding hints — only active for the first ~10 s of a fresh run.
+    if (TD.tutorialUpdate) TD.tutorialUpdate();
 
     // Collision
     if (TD.obstaclesCheckCollision()) {
