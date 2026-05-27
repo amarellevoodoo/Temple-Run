@@ -26,11 +26,15 @@
   const $overlayVersion = document.getElementById('overlayVersion');
   const $overlayVersionLarge = document.getElementById('overlayVersionLarge');
   const $muteBtn        = document.getElementById('muteBtn');
+  const $proPopup       = document.getElementById('proPopup');
+  const $proPopupClose  = document.getElementById('proPopupClose');
 
-  // Whether the "You've outrun XX% of your colleagues!" line should appear
-  // once the leaderboard pool resolves. Only true between a game-over and the
-  // next RUN click, so the initial start screen never shows it.
   let _pendingOutrun = false;
+
+  // Pro-Bundle popup state (session only, resets on page reload)
+  let _sessionPlays = 0;
+  let _playsSinceLastPopup = 0;
+  let _popupShownOnce = false;
 
   // ---- Overlay ----
   TD.showOverlay = function(showScore) {
@@ -38,16 +42,30 @@
     $hud.style.display = 'none';
 
     if (showScore) {
+      _sessionPlays++;
+      _playsSinceLastPopup++;
+
       $finalScore.style.display = 'block';
       $finalScore.textContent =
         'Score: ' + TD.state.score.toLocaleString() + '  -  Coins: ' + TD.totalCoins;
-      // Hide until the leaderboard (or fallback) tells us where the score sits.
       if ($outrunPct) $outrunPct.style.display = 'none';
       $highScore.style.display = 'block';
       $highScore.textContent = 'Best: ' + TD.state.highScore.toLocaleString();
       $startBtn.textContent = 'RUN AGAIN';
       _pendingOutrun = true;
       refreshLeaderboard();
+
+      // Show Pro-Bundle popup: score < 1000, at least 2nd play.
+      // After first appearance, only re-show after 3+ more games.
+      const canShow = TD.state.score < 1000 && _sessionPlays >= 2
+        && (!_popupShownOnce || _playsSinceLastPopup >= 3);
+      if (canShow) {
+        _popupShownOnce = true;
+        _playsSinceLastPopup = 0;
+        setTimeout(() => {
+          $proPopup.classList.remove('hidden');
+        }, 900);
+      }
     } else {
       $finalScore.style.display = 'none';
       if ($outrunPct) $outrunPct.style.display = 'none';
@@ -196,11 +214,19 @@
       });
   }
 
+  // ---- Pro-Bundle popup close ----
+  if ($proPopupClose) {
+    $proPopupClose.addEventListener('click', () => {
+      $proPopup.classList.add('hidden');
+    });
+  }
+
   // ---- Start button ----
   $startBtn.addEventListener('click', () => {
     if (TD.leaderboard && TD.leaderboard.isConfigured()) {
       TD.leaderboard.getPlayerName();
     }
+    $proPopup.classList.add('hidden');
     $overlay.classList.add('hidden');
     TD.init();
     TD.playIntro(() => {
