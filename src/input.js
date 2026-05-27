@@ -21,12 +21,13 @@
     if (!s.running || s.paused) return;
     const p = TD.player;
 
-    if (e.code === 'ArrowLeft'  || e.code === 'KeyA') p.targetLane = Math.max(-1, p.targetLane - 1);
-    if (e.code === 'ArrowRight' || e.code === 'KeyD') p.targetLane = Math.min( 1, p.targetLane + 1);
+    if (e.code === 'ArrowLeft'  || e.code === 'KeyA') { p.targetLane = Math.max(-1, p.targetLane - 1); TD.sfxSwipe(); }
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') { p.targetLane = Math.min( 1, p.targetLane + 1); TD.sfxSwipe(); }
     if ((e.code === 'ArrowUp' || e.code === 'KeyW') && !p.jumping) {
       if (p.sliding) { p.sliding = false; p.slideFrames = 0; }
       p.jumping = true;
       p.jumpVel = JUMP_VEL;
+      TD.sfxJump();
     }
     if (e.code === 'ArrowDown' || e.code === 'KeyS') {
       TD.playerStartSlide();
@@ -50,12 +51,13 @@
     const dy = e.changedTouches[0].clientY - swY;
 
     if (Math.abs(dx) > Math.abs(dy)) {
-      if (dx > 30)       p.targetLane = Math.min(1, p.targetLane + 1);
-      else if (dx < -30) p.targetLane = Math.max(-1, p.targetLane - 1);
+      if (dx > 30)       { p.targetLane = Math.min(1, p.targetLane + 1); TD.sfxSwipe(); }
+      else if (dx < -30) { p.targetLane = Math.max(-1, p.targetLane - 1); TD.sfxSwipe(); }
     } else if (dy < -30 && !p.jumping) {
       if (p.sliding) { p.sliding = false; p.slideFrames = 0; }
       p.jumping = true;
       p.jumpVel = JUMP_VEL;
+      TD.sfxJump();
     } else if (dy > 30) {
       TD.playerStartSlide();
     }

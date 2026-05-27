@@ -68,8 +68,7 @@
         c.collected = true;
         TD.totalCoins++;
         TD.state.score += 100;
-        // Streak only progresses while NOT already invincible — the phase is
-        // a "reward" so the player can ignore coins safely until it ends.
+        TD.sfxCoin();
         if (TD.state.invincibleFrames <= 0) {
           TD.state.coinStreak++;
           if (TD.state.coinStreak >= COIN_STREAK_GOAL) {

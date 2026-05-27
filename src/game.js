@@ -73,6 +73,8 @@
     s.running = false;
     s.screenShake = 12;
 
+    TD.sfxDeath();
+    TD.music.stop();
     if (TD.tutorialEnd) TD.tutorialEnd();
 
     const ps = laneToScreen(TD.player.targetLane, PLAYER_T);
